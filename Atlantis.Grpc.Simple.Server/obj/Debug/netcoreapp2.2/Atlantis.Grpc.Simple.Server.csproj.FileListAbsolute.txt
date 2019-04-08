@@ -1,0 +1,14 @@
+/home/felixwan/Documents/bwkernel/atlantis-org/grpc/Atlantis.Grpc.Simple.Server/bin/Debug/netcoreapp2.2/Atlantis.Grpc.Simple.Server.deps.json
+/home/felixwan/Documents/bwkernel/atlantis-org/grpc/Atlantis.Grpc.Simple.Server/bin/Debug/netcoreapp2.2/Atlantis.Grpc.Simple.Server.runtimeconfig.json
+/home/felixwan/Documents/bwkernel/atlantis-org/grpc/Atlantis.Grpc.Simple.Server/bin/Debug/netcoreapp2.2/Atlantis.Grpc.Simple.Server.runtimeconfig.dev.json
+/home/felixwan/Documents/bwkernel/atlantis-org/grpc/Atlantis.Grpc.Simple.Server/bin/Debug/netcoreapp2.2/Atlantis.Grpc.Simple.Server.dll
+/home/felixwan/Documents/bwkernel/atlantis-org/grpc/Atlantis.Grpc.Simple.Server/bin/Debug/netcoreapp2.2/Atlantis.Grpc.Simple.Server.pdb
+/home/felixwan/Documents/bwkernel/atlantis-org/grpc/Atlantis.Grpc.Simple.Server/bin/Debug/netcoreapp2.2/Atlantis.Grpc.dll
+/home/felixwan/Documents/bwkernel/atlantis-org/grpc/Atlantis.Grpc.Simple.Server/bin/Debug/netcoreapp2.2/Atlantis.Grpc.pdb
+/home/felixwan/Documents/bwkernel/atlantis-org/grpc/Atlantis.Grpc.Simple.Server/obj/Debug/netcoreapp2.2/Atlantis.Grpc.Simple.Server.csprojAssemblyReference.cache
+/home/felixwan/Documents/bwkernel/atlantis-org/grpc/Atlantis.Grpc.Simple.Server/obj/Debug/netcoreapp2.2/Atlantis.Grpc.Simple.Server.csproj.CoreCompileInputs.cache
+/home/felixwan/Documents/bwkernel/atlantis-org/grpc/Atlantis.Grpc.Simple.Server/obj/Debug/netcoreapp2.2/Atlantis.Grpc.Simple.Server.AssemblyInfoInputs.cache
+/home/felixwan/Documents/bwkernel/atlantis-org/grpc/Atlantis.Grpc.Simple.Server/obj/Debug/netcoreapp2.2/Atlantis.Grpc.Simple.Server.AssemblyInfo.cs
+/home/felixwan/Documents/bwkernel/atlantis-org/grpc/Atlantis.Grpc.Simple.Server/obj/Debug/netcoreapp2.2/Atlantis.Grpc.Simple.Server.csproj.CopyComplete
+/home/felixwan/Documents/bwkernel/atlantis-org/grpc/Atlantis.Grpc.Simple.Server/obj/Debug/netcoreapp2.2/Atlantis.Grpc.Simple.Server.dll
+/home/felixwan/Documents/bwkernel/atlantis-org/grpc/Atlantis.Grpc.Simple.Server/obj/Debug/netcoreapp2.2/Atlantis.Grpc.Simple.Server.pdb

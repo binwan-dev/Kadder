@@ -1,12 +1,11 @@
 using System;
 using System.Collections.Generic;
-using Followme.AspNet.Core.FastCommon.Components;
-using Followme.AspNet.Core.FastCommon.Logging;
-using Followme.AspNet.Core.FastCommon.Serializing;
 using System.Collections;
 using System.Threading.Tasks;
+using Atlantis.Grpc.Logging;
+using Atlantis.Grpc.Utilies;
 
-namespace Followme.AspNet.Core.FastCommon.ThirdParty.GrpcServer.Middlewares
+namespace Atlantis.Grpc.Middlewares
 {
     public class LoggerMiddleware:GrpcMiddlewareBase
     {
@@ -17,7 +16,6 @@ namespace Followme.AspNet.Core.FastCommon.ThirdParty.GrpcServer.Middlewares
         
         public LoggerMiddleware(HandlerDelegateAsync next):base(next)
         {
-            _grpcLogger=ObjectContainer.Resolve<IGrpcLoggerFactory>().Create("GrpcLoggerMiddleware");
             _logger=ObjectContainer.Resolve<ILoggerFactory>().Create("GrpcLoggerMiddleware");
             _jsonSerializer=ObjectContainer.Resolve<IJsonSerializer>();
             _startCallTimerDic=new Dictionary<Guid,DateTime >();

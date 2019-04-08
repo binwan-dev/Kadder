@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace Followme.AspNet.Core.FastCommon.ThirdParty.GrpcServer
+namespace Atlantis.Grpc
 {
     public class ProtoMessageNameCompare : IComparer<string>
     {

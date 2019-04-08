@@ -1,6 +1,6 @@
 using Grpc.Core;
 
-namespace Followme.AspNet.Core.FastCommon.ThirdParty.GrpcServer
+namespace Atlantis.Grpc
 {
     public interface IGrpcServices
     {

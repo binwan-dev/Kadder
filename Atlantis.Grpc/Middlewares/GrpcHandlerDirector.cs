@@ -1,7 +1,6 @@
-using System;
-using Followme.AspNet.Core.FastCommon.Components;
+using Atlantis.Grpc.Utilies;
 
-namespace Followme.AspNet.Core.FastCommon.ThirdParty.GrpcServer.Middlewares
+namespace Atlantis.Grpc.Middlewares
 {
     public class GrpcHandlerDirector
     {

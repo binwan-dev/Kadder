@@ -1,95 +1,113 @@
-using Followme.AspNet.Core.FastCommon.Infrastructure;
-using Followme.AspNet.Core.FastCommon.Utilities;
-using System.Reflection;
-using Followme.AspNet.Core.FastCommon.ThirdParty.GrpcServer;
-using Grpc.Core;
-using Followme.AspNet.Core.FastCommon.CodeGeneration;
 using System;
-using ProtoBuf;
-using System.IO;
 using System.Collections.Generic;
-using Followme.AspNet.Core.FastCommon.Components;
-using FM.ConsulInterop;
-using System.Threading.Tasks;
-using Followme.AspNet.Core.FastCommon.ThirdParty.GrpcServer.Middlewares;
-using System.Text;
+using System.IO;
 using System.Linq;
+using System.Reflection;
+using System.Text;
+using Atlantis.Grpc.Utilies;
+using Grpc.Core;
+using ProtoBuf;
 
-namespace Followme.AspNet.Core.FastCommon.Configurations
+namespace Atlantis.Grpc
 {
-    public static class GrpcServerConfigurationExetension
+    public class GrpcServerBuilder
     {
-        private static IList<string> _messages = new List<string>();
-        private static ConsulSetting _consulSetting;
+        public static GrpcServerBuilder Instance=new GrpcServerBuilder();
+        private IList<string> _messages = new List<string>();
 
-        public static Configuration RegisterGrpcServer(this Configuration configuration, string namespaceName,string packageName, string serviceName, string settingConfigName, bool isGeneralProtoFile = true)
+        private GrpcServerBuilder()
+        {}
+        
+        public CodeClass GenerateHandlerProxy(Assembly[] assemblies)
         {
-            configuration.Setting.SetGrpcServerSetting(configuration.GetSetting<GrpcServerSetting>(settingConfigName) ?? throw new ArgumentNullException("Please config the 'GrpcServer' section! "));
-            ObjectContainer.RegisterInstance<Server>(new Server());
-            ObjectContainer.Register<GrpcHandlerBuilder>();
-            ObjectContainer.Register<IGrpcLoggerFactory, GrpcLoggerFactory>();
-            RegisterBussinessCode(configuration, namespaceName, packageName, serviceName, isGeneralProtoFile);
+            var types = RefelectionHelper.GetImplInterfaceTypes(
+                typeof(IMessagingServicer), true, assemblies);
 
-            var serviceRegister = new ServiceRegister(GetConsulSetting(configuration).Local);
-            ObjectContainer.RegisterInstance<ServiceRegister>(serviceRegister);
-            return configuration;
-        }
+            var codeClass = CodeBuilder.Instance
+                .CreateClass(
+                    "MessageServicerProxy",
+                    new string[] { "IMessageServicerProxy" },
+                    "Atlantis.Grpc")
+                .AddRefence(
+                    "using Atlantis.Grpc.Utilies;",
+                    "using System.Threading.Tasks;");
 
-        public static Configuration StartGrpcServer(this Configuration configuration)
-        {
-            GrpcHandlerDirector.ConfigActor();
+            var needResult = new StringBuilder();
+            var noResult = new StringBuilder();
 
-            var setting = configuration.Setting.GetGrpcServerSetting();
-            var server = ObjectContainer.Resolve<Server>();
-             if (server.Ports.Count() == 0)
+            foreach (var type in types)
             {
-                server.Ports.Add(new ServerPort(setting.Host, setting.Port, ServerCredentials.Insecure));
+                var methods = type.GetMethods();
+                foreach (var method in methods)
+                {
+                    var parameters = method.GetParameters();
+                    if (parameters.Length != 1) continue;
+                    if (method.ReturnType == typeof(void))
+                    {
+                        noResult.AppendLine(
+                            $@"if(string.Equals(message.GetTypeFullName(),""{parameters[0].ParameterType.FullName}""))
+                               {{
+                                   return async (m)=>await {{ObjectContainer.Resolve<{type.Name}>().{method.Name}(message as {parameters[0].ParameterType.FullName});}} ;   
+                               }}");
+                    }
+                    else
+                    {
+                        needResult.AppendLine(
+                            $@"if(string.Equals(message.GetTypeFullName(),""{parameters[0].ParameterType.FullName}""))
+                               {{
+                                   return async (m)=>{{return (await ObjectContainer.Resolve<{type.Name}>().{method.Name}(message as {parameters[0].ParameterType.FullName})) as TMessageResult;}} ;   
+                               }}");
+                    }
+                    CodeBuilder.Instance.AddAssemblyRefence(parameters[0].ParameterType.Assembly.Location);
+                }
+                codeClass.AddRefence($"using {type.Namespace};");
+                CodeBuilder.Instance.AddAssemblyRefence(type.Assembly.Location);
             }
-            if (server.Services.Count() == 0)
-            {
-                server.Services.Add(ObjectContainer.Resolve<IGrpcServices>().BindServices());
-            }
-            server.Start();
-            
-            _messages = null;
 
-            ObjectContainer.Resolve<ServiceRegister>().Register();
-            return configuration;
+            noResult.Append("return null;");
+            needResult.Append("return null;");
+
+            codeClass
+                .CreateMember(
+                    "GetHandleDelegate<TMessage,TMessageResult>",
+                    needResult.ToString(),
+                    "Func<TMessage,Task<TMessageResult>>",
+                    new CodeParameter[] { new CodeParameter("TMessage", "message") },
+                    new CodeMemberAttribute("public"),
+                    "TMessageResult:class where TMessage:BaseMessage");
+            codeClass
+                .CreateMember(
+                    "GetHandleDelegate<TMessage>",
+                    noResult.ToString(),
+                    "Func<TMessage,Task>",
+                    new CodeParameter[] { new CodeParameter("TMessage", "message") },
+                    new CodeMemberAttribute("public"),
+                    "TMessage:BaseMessage");
+
+            var codeAssembly = CodeBuilder.Instance
+                .AddAssemblyRefence(assemblies.Select(p => p.Location).ToArray())
+                .AddAssemblyRefence(Assembly.GetExecutingAssembly().Location);
+
+            return codeClass;
         }
 
-        public static async Task ShutdownGrpcServerAsync(this Configuration configuration)
+        public CodeClass GenerateGrpcProxy(GrpcServerOptions options)
         {
-            var server = ObjectContainer.Resolve<Server>();
-            await server.ShutdownAsync();
-            await ObjectContainer.Resolve<ServiceRegister>().Deregister();
-        }
+            var types = RefelectionHelper.GetImplInterfaceTypes(
+                typeof(IMessagingServicer), true, options.ScanAssemblies);
 
-        public static ConsulSetting GetConsulSetting(this Configuration configuration)
-        {
-            if (_consulSetting != null) return _consulSetting;
-
-            _consulSetting = configuration.GetSetting<ConsulSetting>("Consul");
-            if (_consulSetting == null) throw new ArgumentNullException("The consul config has error!");
-            if (_consulSetting.Local == null) throw new ArgumentNullException("The consul local config has error!");
-
-            return _consulSetting;
-        }
-
-        private static void RegisterBussinessCode(Configuration configuration, string namespaceName,string packageName, string serviceName, bool isGeneralProtoFile)
-        {
-            var types = RefelectionHelper.GetImplInterfaceTypes(typeof(IMessagingServicer), true, configuration.Setting.BussinessAssemblies);
-            var queryServicerDeclareList = new List<string>();
-
-            var codeClass = CodeBuilder.Instance.CreateClass("GrpcService", new string[] { "IGrpcServices" }, "Followme.AspNet.Core.FastCommon.ThirdParty.GrpcServer")
+            var codeClass = CodeBuilder.Instance
+                .CreateClass("GrpcService",
+                             new string[] { "IGrpcServices" },
+                             "Atlantis.Grpc")
                 .AddRefence("using Grpc.Core;")
                 .AddRefence("using System.Threading.Tasks;")
-                .AddRefence("using Followme.AspNet.Core.FastCommon.Serializing;")
-                .AddRefence("using Followme.AspNet.Core.FastCommon.Infrastructure;")
+                .AddRefence("using Atlantis.Grpc.Utilies;")
                 .CreateFiled("_binarySerializer", "IBinarySerializer", new CodeMemberAttribute("private", "readonly"))
                 .CreateFiled("_messageServicer", "GrpcMessageServicer", new CodeMemberAttribute("private", "readonly"))
                 .CreateConstructor("_binarySerializer=ObjectContainer.Resolve<IBinarySerializer>();\n_messageServicer=new GrpcMessageServicer();");
             var bindServicesCode = new StringBuilder("return ServerServiceDefinition.CreateBuilder()\n");
-            var protoServiceCode = new StringBuilder($"service {serviceName} {{");
+            var protoServiceCode = new StringBuilder($"service {options.ServiceName} {{");
             var protoMessageCode = new StringBuilder();
             protoServiceCode.AppendLine();
             foreach (var item in types)
@@ -103,7 +121,10 @@ namespace Followme.AspNet.Core.FastCommon.Configurations
                     CreateCallCode(method, parameters[0], baseInterfaces);
                     CreateGrpcCallCode(method, parameters[0]);
 
-                    if (isGeneralProtoFile) CreateProtoCode(method, parameters[0]);
+                    if (options.IsGeneralProtoFile)
+                    {
+                        CreateProtoCode(method, parameters[0]);
+                    }
                 }
             }
             bindServicesCode.AppendLine(".Build();");
@@ -112,31 +133,33 @@ namespace Followme.AspNet.Core.FastCommon.Configurations
                     .AddAssemblyRefence(typeof(ServerServiceDefinition).Assembly.Location)
                     .AddAssemblyRefence(typeof(ServerServiceDefinition).Assembly.Location);
 
-            if (isGeneralProtoFile)
+            if (options.IsGeneralProtoFile)
             {
                 protoServiceCode.Append("\n}\n");
                 var protoStr = new StringBuilder();
                 protoStr.AppendLine(@"syntax = ""proto3"";");
-                protoStr.AppendLine($@"option csharp_namespace = ""{namespaceName}"";");
-                protoStr.AppendLine($"package {packageName};\n");
+                protoStr.AppendLine($@"option csharp_namespace = ""{options.NamespaceName}"";");
+                protoStr.AppendLine($"package {options.PackageName};\n");
                 protoStr.Append(protoServiceCode);
                 protoStr.AppendLine();
                 protoStr.Append(protoMessageCode);
-                var fileName = $"{Environment.CurrentDirectory}/{namespaceName}.proto";
+                var fileName = $"{Environment.CurrentDirectory}/{options.NamespaceName}.proto";
                 if (File.Exists(fileName)) File.Delete(fileName);
                 File.WriteAllText(fileName, protoStr.ToString());
                 _messages = null;
             }
-            queryServicerDeclareList.Clear();
+            
+            return codeClass;
 
             void CreateCallCode(MethodInfo method, ParameterInfo parameter, Type[] baseInterfaces)
             {
-                string codeMessageType = "MessageExecutingType.Query";
-                if (baseInterfaces.Contains(typeof(ICommandServicer))) codeMessageType = "MessageExecutingType.Command";
+                // string codeMessageType = "MessageExecutingType.Query";
+                // if (baseInterfaces.Contains(typeof(IMessagingServicer)))
+                // {codeMessageType = "MessageExecutingType.Command";
+                // }
 
-                codeClass.CreateMember($"{method.Name.Replace("Async","")}",
-                                            $@"request.SetMessageExecutingType({codeMessageType});
-                                               request.SetTypeFullName(""{parameter.ParameterType.FullName}"");
+                codeClass.CreateMember($"{method.Name.Replace("Async", "")}",
+                                            $@"request.SetTypeFullName(""{parameter.ParameterType.FullName}"");
                                                return _messageServicer.ProcessAsync<{parameter.ParameterType.Name},{GetMethodReturn(method.ReturnType).Name}>(request,context);",
                                             $"Task<{GetMethodReturn(method.ReturnType).Name}>",
                                             new CodeParameter[]
@@ -153,8 +176,8 @@ namespace Followme.AspNet.Core.FastCommon.Configurations
             {
                 bindServicesCode.AppendLine($@".AddMethod(new Method<{parameter.ParameterType.Name},{GetMethodReturn(method.ReturnType).Name}>(
                                             MethodType.Unary,
-                                            ""{namespaceName}.{serviceName}"",
-                                            ""{method.Name.Replace("Async","")}"",
+                                            ""{options.NamespaceName}.{options.ServiceName}"",
+                                            ""{method.Name.Replace("Async", "")}"",
                                             new Marshaller<{parameter.ParameterType.Name}>(
                                                 _binarySerializer.Serialize,
                                                 _binarySerializer.Deserialize<{parameter.ParameterType.Name}>
@@ -163,7 +186,7 @@ namespace Followme.AspNet.Core.FastCommon.Configurations
                                                 _binarySerializer.Serialize,
                                                 _binarySerializer.Deserialize<{GetMethodReturn(method.ReturnType).Name}>)
                                             ),
-                                        {method.Name.Replace("Async","")})");
+                                        {method.Name.Replace("Async", "")})");
                 CodeBuilder.Instance.AddAssemblyRefence(parameter.ParameterType.Assembly.Location)
                            .AddAssemblyRefence(GetMethodReturn(method.ReturnType).Assembly.Location);
             }
@@ -171,7 +194,7 @@ namespace Followme.AspNet.Core.FastCommon.Configurations
             void CreateProtoCode(MethodInfo method, ParameterInfo parameter)
             {
                 protoServiceCode.AppendLine();
-                protoServiceCode.AppendLine($"\trpc {method.Name.Replace("Async","")}({parameter.ParameterType.Name}) returns({GetMethodReturn(method.ReturnType).Name});");
+                protoServiceCode.AppendLine($"\trpc {method.Name.Replace("Async", "")}({parameter.ParameterType.Name}) returns({GetMethodReturn(method.ReturnType).Name});");
                 if (!_messages.Contains(parameter.ParameterType.Name))
                 {
                     protoMessageCode.AppendLine(CreateProtoMessageCode(parameter.ParameterType));
@@ -194,7 +217,7 @@ namespace Followme.AspNet.Core.FastCommon.Configurations
                 var enumCode = new StringBuilder();
                 var refenceCode = new StringBuilder();
                 messageCode.AppendLine();
-                var properties = messageType.GetProperties().Where(p=>p.DeclaringType==messageType);
+                var properties = messageType.GetProperties().Where(p => p.DeclaringType == messageType);
                 var isNeedAutoIndex = !(properties.FirstOrDefault(p => p.GetCustomAttribute(typeof(ProtoMemberAttribute)) != null) != null);
                 int index = 1;
                 foreach (var item in properties.OrderBy(p => p.Name, new ProtoPropertyCompare()))
@@ -281,33 +304,6 @@ namespace Followme.AspNet.Core.FastCommon.Configurations
                 return genericTypes[0];
             }
         }
-        
 
-    }
-
-    public static class GrpcServerConfigurationSettingExtension
-    {
-        private static GrpcServerSetting _setting;
-
-        public static GrpcServerSetting GetGrpcServerSetting(this ConfigurationSetting configurationSetting)
-        {
-            return _setting;
-        }
-
-        public static ConfigurationSetting SetGrpcServerSetting(this ConfigurationSetting configurationSetting, GrpcServerSetting grpcServerSetting)
-        {
-            _setting = grpcServerSetting;
-            return configurationSetting;
-        }
-
-
-    }
-
-    public class ProtoPropertyCompare : IComparer<string>
-    {
-        public int Compare(string x, string y)
-        {
-            return string.CompareOrdinal(x, y);
-        }
     }
 }

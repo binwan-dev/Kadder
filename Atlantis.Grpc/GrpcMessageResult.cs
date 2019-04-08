@@ -1,10 +1,7 @@
-﻿using Followme.AspNet.Core.FastCommon.Infrastructure;
+﻿using Atlantis.Grpc.Utilies;
 using ProtoBuf;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
-namespace Followme.AspNet.Core.FastCommon.ThirdParty.GrpcServer
+namespace Atlantis.Grpc
 {
     [ProtoContract(ImplicitFields = ImplicitFields.AllPublic)]
     public class GrpcMessageResult : MessageResult
@@ -13,10 +10,11 @@ namespace Followme.AspNet.Core.FastCommon.ThirdParty.GrpcServer
         {
         }
 
-        public GrpcMessageResult(ResultCode code):base(code,"")
-        {}
+        public GrpcMessageResult(ResultCode code) : base(code, "")
+        { }
 
-        public GrpcMessageResult(ResultCode code, string message) : base(code, message)
+        public GrpcMessageResult(ResultCode code, string message)
+            : base(code, message)
         {
         }
 
@@ -24,13 +22,18 @@ namespace Followme.AspNet.Core.FastCommon.ThirdParty.GrpcServer
 
         public override string Message { get; set; }
 
-        public override int Status { get => base.Status; set => base.Status = value; }
+        public override int Status
+        {
+            get => base.Status;
+            set => base.Status = value;
+        }
     }
 
     [ProtoContract(ImplicitFields = ImplicitFields.AllPublic)]
     public class GrpcSuccess : GrpcMessageResult
     {
-        public GrpcSuccess(string message="OK"):base(ResultCode.Success,message)
+        public GrpcSuccess(string message = "OK")
+            : base(ResultCode.Success, message)
         {
         }
 
@@ -38,7 +41,11 @@ namespace Followme.AspNet.Core.FastCommon.ThirdParty.GrpcServer
 
         public override string Message { get; set; }
 
-        public override int Status { get => base.Status; set => base.Status = value; }
+        public override int Status
+        {
+            get => base.Status;
+            set => base.Status = value;
+        }
     }
 
 }

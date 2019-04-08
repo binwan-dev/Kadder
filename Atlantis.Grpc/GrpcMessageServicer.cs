@@ -1,12 +1,11 @@
 using System;
-using Followme.AspNet.Core.FastCommon.Infrastructure;
-using Followme.AspNet.Core.FastCommon.ThirdParty.GrpcServer.Middlewares;
-using Followme.AspNet.Core.FastCommon.Components;
 using Grpc.Core;
 using System.Threading.Tasks;
-using Followme.AspNet.Core.FastCommon.Logging;
+using Atlantis.Grpc.Logging;
+using Atlantis.Grpc.Middlewares;
+using Atlantis.Grpc.Utilies;
 
-namespace Followme.AspNet.Core.FastCommon.ThirdParty.GrpcServer
+namespace Atlantis.Grpc
 {
     public class GrpcMessageServicer
     {
@@ -15,13 +14,15 @@ namespace Followme.AspNet.Core.FastCommon.ThirdParty.GrpcServer
 
         public GrpcMessageServicer()
         {
-            _builder=ObjectContainer.Resolve<GrpcHandlerBuilder>();
-            _logger=ObjectContainer.Resolve<ILoggerFactory>().Create<GrpcMessageServicer>();
+            _builder = ObjectContainer.Resolve<GrpcHandlerBuilder>();
+            _logger = ObjectContainer.Resolve<ILoggerFactory>()
+                .Create<GrpcMessageServicer>();
         }
-        
-        public async Task<TMessageResult> ProcessAsync<TMessage,TMessageResult>(TMessage message,ServerCallContext callContext)
-            where TMessage:BaseMessage
-            where TMessageResult:MessageResult,new()
+
+        public async Task<TMessageResult> ProcessAsync<TMessage, TMessageResult>(
+            TMessage message, ServerCallContext callContext)
+            where TMessage : BaseMessage
+            where TMessageResult : MessageResult, new()
         {
             try
             {
@@ -33,7 +34,11 @@ namespace Followme.AspNet.Core.FastCommon.ThirdParty.GrpcServer
                 }
                 else
                 {
-                    return new TMessageResult() { Code = context.Result.Code, Message = context.Result.Message };
+                    return new TMessageResult()
+                    {
+                        Code = context.Result.Code,
+                        Message = context.Result.Message
+                    };
                 }
             }
             catch (Exception ex)

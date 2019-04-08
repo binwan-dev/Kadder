@@ -1,9 +1,6 @@
-using Followme.AspNet.Core.FastCommon.Infrastructure;
-using Followme.AspNet.Core.FastCommon.Logging;
-using System;
 using System.Threading.Tasks;
 
-namespace Followme.AspNet.Core.FastCommon.ThirdParty.GrpcServer.Middlewares
+namespace Atlantis.Grpc.Middlewares
 {
     public abstract class GrpcMiddlewareBase
     {

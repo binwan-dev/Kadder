@@ -1,12 +1,10 @@
 using System;
-using Followme.AspNet.Core.FastCommon.ThirdParty.GrpcServer.Middlewares;
 using System.Collections.Generic;
-using Followme.AspNet.Core.FastCommon.Components;
-using Followme.AspNet.Core.FastCommon.Infrastructure;
 using System.Linq;
 using System.Threading.Tasks;
+using Atlantis.Grpc.Utilies;
 
-namespace Followme.AspNet.Core.FastCommon.ThirdParty.GrpcServer.Middlewares
+namespace Atlantis.Grpc.Middlewares
 {
     public class GrpcHandlerBuilder
     {

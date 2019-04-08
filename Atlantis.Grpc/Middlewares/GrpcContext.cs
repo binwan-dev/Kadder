@@ -1,38 +1,41 @@
 using System;
-using Followme.AspNet.Core.FastCommon.Infrastructure;
+using Atlantis.Grpc.Utilies;
 using Grpc.Core;
 
-namespace Followme.AspNet.Core.FastCommon.ThirdParty.GrpcServer.Middlewares
+namespace Atlantis.Grpc.Middlewares
 {
     public class GrpcContext
     {
-        public GrpcContext(BaseMessage message,ServerCallContext callContext)
+        public GrpcContext(BaseMessage message, ServerCallContext callContext)
         {
-            Message=message??throw new ArgumentNullException("The message cannot be null!");
-            CallContext=callContext?? throw new ArgumentNullException("The message call context cannot be null!");
-            Id=Guid.NewGuid();
+            Message = message ?? throw new ArgumentNullException("The message cannot be null!");
+            CallContext = callContext ?? throw new ArgumentNullException("The message call context cannot be null!");
+            Id = Guid.NewGuid();
         }
 
-        public Guid Id{get;}
-        
-        public BaseMessage Message{get;}
+        public Guid Id { get; }
 
-        public MessageResult Result{get;set;}
+        public BaseMessage Message { get; }
 
-        public ServerCallContext CallContext{get;}
+        public MessageResult Result { get; set; }
 
-        public bool HasDone{get;set;}
+        public ServerCallContext CallContext { get; }
 
-        public GrpcMessagePerformance PerformanceInfo{get;private set;}
+        public bool HasDone { get; set; }
+
+        public GrpcMessagePerformance PerformanceInfo { get; private set; }
 
         public void StartMonitor()
         {
-            PerformanceInfo=new GrpcMessagePerformance(DateTime.Now);
+            PerformanceInfo = new GrpcMessagePerformance(DateTime.Now);
         }
 
         public void StopMonitor()
         {
-            if(PerformanceInfo==null)PerformanceInfo=new GrpcMessagePerformance(DateTime.Now.AddDays(1));
+            if (PerformanceInfo == null)
+            {
+                PerformanceInfo = new GrpcMessagePerformance(DateTime.Now.AddDays(1));
+            }
             PerformanceInfo.CalcUsedTime(DateTime.Now);
         }
     }
@@ -41,23 +44,23 @@ namespace Followme.AspNet.Core.FastCommon.ThirdParty.GrpcServer.Middlewares
     {
         public GrpcMessagePerformance(DateTime startTime)
         {
-            StartTime=startTime;
+            StartTime = startTime;
         }
-        
-        public DateTime StartTime{get;private set;}
 
-        public DateTime EndTime{get;private set;}
+        public DateTime StartTime { get; private set; }
+
+        public DateTime EndTime { get; private set; }
 
         /// <summary>
         /// Used time, unit: ms
         /// </summary>
-        public long UsedTime{get;private set;}
-        
+        public long UsedTime { get; private set; }
+
         public long CalcUsedTime(DateTime endTime)
         {
-            EndTime=endTime;
-            var timespan=EndTime -StartTime;
-            UsedTime=(long)timespan.TotalMilliseconds;
+            EndTime = endTime;
+            var timespan = EndTime - StartTime;
+            UsedTime = (long)timespan.TotalMilliseconds;
             return UsedTime;
         }
     }
