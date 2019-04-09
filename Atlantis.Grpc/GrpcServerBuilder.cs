@@ -4,6 +4,8 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using Atlantis.Common.CodeGeneration;
+using Atlantis.Common.CodeGeneration.Descripters;
 using Atlantis.Grpc.Utilies;
 using Grpc.Core;
 using ProtoBuf;
@@ -18,17 +20,23 @@ namespace Atlantis.Grpc
         private GrpcServerBuilder()
         {}
         
-        public CodeClass GenerateHandlerProxy(Assembly[] assemblies)
+        public ClassDescripter GenerateHandlerProxy(
+            Assembly[] assemblies,CodeBuilder codeBuilder=null)
         {
+            if(codeBuilder==null)
+            {
+                codeBuilder=CodeBuilder.Default;
+            }
+            
             var types = RefelectionHelper.GetImplInterfaceTypes(
                 typeof(IMessagingServicer), true, assemblies);
 
-            var codeClass = CodeBuilder.Instance
-                .CreateClass(
+            var codeClass = new ClassDescripter(
                     "MessageServicerProxy",
-                    new string[] { "IMessageServicerProxy" },
                     "Atlantis.Grpc")
-                .AddRefence(
+                .SetAccess(AccessType.Public)
+                .SetBaseType("IMessageServicerProxy")
+                .AddUsing(
                     "using Atlantis.Grpc.Utilies;",
                     "using System.Threading.Tasks;");
 
@@ -58,54 +66,71 @@ namespace Atlantis.Grpc
                                    return async (m)=>{{return (await ObjectContainer.Resolve<{type.Name}>().{method.Name}(message as {parameters[0].ParameterType.FullName})) as TMessageResult;}} ;   
                                }}");
                     }
-                    CodeBuilder.Instance.AddAssemblyRefence(parameters[0].ParameterType.Assembly.Location);
+                    codeBuilder.AddAssemblyRefence(parameters[0].ParameterType.Assembly.Location);
                 }
-                codeClass.AddRefence($"using {type.Namespace};");
-                CodeBuilder.Instance.AddAssemblyRefence(type.Assembly.Location);
+                codeClass.AddUsing($"using {type.Namespace};");
+                codeBuilder.AddAssemblyRefence(type.Assembly.Location);
             }
 
             noResult.Append("return null;");
             needResult.Append("return null;");
 
-            codeClass
-                .CreateMember(
-                    "GetHandleDelegate<TMessage,TMessageResult>",
-                    needResult.ToString(),
-                    "Func<TMessage,Task<TMessageResult>>",
-                    new CodeParameter[] { new CodeParameter("TMessage", "message") },
-                    new CodeMemberAttribute("public"),
-                    "TMessageResult:class where TMessage:BaseMessage");
-            codeClass
-                .CreateMember(
-                    "GetHandleDelegate<TMessage>",
-                    noResult.ToString(),
-                    "Func<TMessage,Task>",
-                    new CodeParameter[] { new CodeParameter("TMessage", "message") },
-                    new CodeMemberAttribute("public"),
-                    "TMessage:BaseMessage");
-
-            var codeAssembly = CodeBuilder.Instance
+            codeClass.CreateMember(
+                new MethodDescripter("GetHandleDelegate<TMessage,TMessageResult>")
+                .SetAccess(AccessType.Public)
+                .SetReturn("Func<TMessage,Task<TMessageResult>>")
+                .SetCode(needResult.ToString())
+                .SetParams(
+                    new ParameterDescripter("TMessage","message"))
+                .SetTypeParameters(
+                    new TypeParameterDescripter("TMessageResult","class"),
+                    new TypeParameterDescripter("TMessage", "BaseMessage")),
+                new MethodDescripter("GetHandleDelegate<TMessage>")
+                .SetAccess(AccessType.Public)
+                .SetReturn("Func<TMessage,Task>")
+                .SetCode(noResult.ToString())
+                .SetParams(
+                    new ParameterDescripter("TMessage", "message"))
+                .SetTypeParameters(
+                    new TypeParameterDescripter("TMessage", "BaseMessage")));
+                    
+            codeBuilder
                 .AddAssemblyRefence(assemblies.Select(p => p.Location).ToArray())
-                .AddAssemblyRefence(Assembly.GetExecutingAssembly().Location);
+                .AddAssemblyRefence(Assembly.GetExecutingAssembly().Location)
+                .CreateClass(codeClass);
 
             return codeClass;
         }
 
-        public CodeClass GenerateGrpcProxy(GrpcServerOptions options)
+        public ClassDescripter GenerateGrpcProxy(
+            GrpcServerOptions options,CodeBuilder codeBuilder=null)
         {
+            if(codeBuilder==null)
+            {
+                codeBuilder=CodeBuilder.Default;
+            }
+            
             var types = RefelectionHelper.GetImplInterfaceTypes(
                 typeof(IMessagingServicer), true, options.ScanAssemblies);
 
-            var codeClass = CodeBuilder.Instance
-                .CreateClass("GrpcService",
-                             new string[] { "IGrpcServices" },
-                             "Atlantis.Grpc")
-                .AddRefence("using Grpc.Core;")
-                .AddRefence("using System.Threading.Tasks;")
-                .AddRefence("using Atlantis.Grpc.Utilies;")
-                .CreateFiled("_binarySerializer", "IBinarySerializer", new CodeMemberAttribute("private", "readonly"))
-                .CreateFiled("_messageServicer", "GrpcMessageServicer", new CodeMemberAttribute("private", "readonly"))
-                .CreateConstructor("_binarySerializer=ObjectContainer.Resolve<IBinarySerializer>();\n_messageServicer=new GrpcMessageServicer();");
+            var codeClass = new ClassDescripter("GrpcService","Atlantis.Grpc")
+                .SetAccess(AccessType.Public)
+                .SetBaseType("IGrpcServices")
+                .AddUsing("using Grpc.Core;")
+                .AddUsing("using System.Threading.Tasks;")
+                .AddUsing("using Atlantis.Grpc.Utilies;")
+                .CreateFiled(
+                    new FieldDescripter("_binarySerializer")
+                    .SetAccess(AccessType.PrivateReadonly)
+                    .SetType(typeof(IBinarySerializer)),
+                    new FieldDescripter("_messageServicer")
+                    .SetAccess(AccessType.PrivateReadonly)
+                    .SetType(typeof(GrpcMessageServicer)))
+                .CreateConstructor(
+                    new ConstructorDescripter("GrpcService")
+                    .SetCode("_binarySerializer=ObjectContainer.Resolve<IBinarySerializer>();\n_messageServicer=new GrpcMessageServicer();")
+                    .SetAccess(AccessType.Public));
+                
             var bindServicesCode = new StringBuilder("return ServerServiceDefinition.CreateBuilder()\n");
             var protoServiceCode = new StringBuilder($"service {options.ServiceName} {{");
             var protoMessageCode = new StringBuilder();
@@ -128,8 +153,12 @@ namespace Atlantis.Grpc
                 }
             }
             bindServicesCode.AppendLine(".Build();");
-            codeClass.CreateMember("BindServices", bindServicesCode.ToString(), "ServerServiceDefinition", null, new CodeMemberAttribute("public"));
-            CodeBuilder.Instance.AddAssemblyRefence(Assembly.GetExecutingAssembly().Location)
+            codeClass.CreateMember(
+                new MethodDescripter("BindServices")
+                .SetCode(bindServicesCode.ToString())
+                .SetReturn("ServerServiceDefinition")
+                .SetAccess(AccessType.Public));
+            codeBuilder.AddAssemblyRefence(Assembly.GetExecutingAssembly().Location)
                     .AddAssemblyRefence(typeof(ServerServiceDefinition).Assembly.Location)
                     .AddAssemblyRefence(typeof(ServerServiceDefinition).Assembly.Location);
 
@@ -148,28 +177,26 @@ namespace Atlantis.Grpc
                 File.WriteAllText(fileName, protoStr.ToString());
                 _messages = null;
             }
+
+            codeBuilder.CreateClass(codeClass);
             
             return codeClass;
 
             void CreateCallCode(MethodInfo method, ParameterInfo parameter, Type[] baseInterfaces)
             {
-                // string codeMessageType = "MessageExecutingType.Query";
-                // if (baseInterfaces.Contains(typeof(IMessagingServicer)))
-                // {codeMessageType = "MessageExecutingType.Command";
-                // }
-
-                codeClass.CreateMember($"{method.Name.Replace("Async", "")}",
-                                            $@"request.SetTypeFullName(""{parameter.ParameterType.FullName}"");
-                                               return _messageServicer.ProcessAsync<{parameter.ParameterType.Name},{GetMethodReturn(method.ReturnType).Name}>(request,context);",
-                                            $"Task<{GetMethodReturn(method.ReturnType).Name}>",
-                                            new CodeParameter[]
-                                            {
-                                                 new CodeParameter(parameter.ParameterType.Name, "request"),
-                                                 new CodeParameter("ServerCallContext","context")
-                                            },
-                                            new CodeMemberAttribute("public"))
-                            .AddRefence($"using {parameter.ParameterType.Namespace};")
-                         .AddRefence($"using {GetMethodReturn(method.ReturnType).Namespace};");
+                codeClass
+                    .CreateMember(
+                        new MethodDescripter($"{method.Name.Replace("Async", "")}",true)
+                        .AppendCode(
+                            $@"request.SetTypeFullName(""{parameter.ParameterType.FullName}"");
+                            return await _messageServicer.ProcessAsync<{parameter.ParameterType.Name},{GetMethodReturn(method.ReturnType).Name}>(request,context);")
+                        .SetReturn($"Task<{GetMethodReturn(method.ReturnType).Name}>")
+                        .SetParams(
+                            new ParameterDescripter(parameter.ParameterType.Name, "request"),
+                            new ParameterDescripter("ServerCallContext","context"))
+                        .SetAccess(AccessType.Public))
+                    .AddUsing($"using {parameter.ParameterType.Namespace};")
+                    .AddUsing($"using {GetMethodReturn(method.ReturnType).Namespace};");
             }
 
             void CreateGrpcCallCode(MethodInfo method, ParameterInfo parameter)
@@ -187,7 +214,7 @@ namespace Atlantis.Grpc
                                                 _binarySerializer.Deserialize<{GetMethodReturn(method.ReturnType).Name}>)
                                             ),
                                         {method.Name.Replace("Async", "")})");
-                CodeBuilder.Instance.AddAssemblyRefence(parameter.ParameterType.Assembly.Location)
+                codeBuilder.AddAssemblyRefence(parameter.ParameterType.Assembly.Location)
                            .AddAssemblyRefence(GetMethodReturn(method.ReturnType).Assembly.Location);
             }
 

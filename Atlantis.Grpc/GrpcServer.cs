@@ -10,6 +10,7 @@ using System.Linq;
 using Atlantis.Grpc.Utilies;
 using Atlantis.Grpc.Middlewares;
 using Atlantis.Grpc.Logging;
+using Atlantis.Common.CodeGeneration;
 
 namespace Atlantis.Grpc
 {
@@ -27,16 +28,19 @@ namespace Atlantis.Grpc
             _server = new Server();
             ObjectContainer.RegisterInstance(new GrpcHandlerBuilder());
             ObjectContainer.Register<ILoggerFactory, LoggerFactory>(LifeScope.Single);
-            var grpcCodeClass=GrpcServerBuilder.Instance.GenerateGrpcProxy(_options);
-            var proxyCodeClass = GrpcServerBuilder.Instance.GenerateHandlerProxy(_options.ScanAssemblies);
-            var codeAssembly = CodeBuilder.Instance.Build();
-
-            var namespaces = $"{proxyCodeClass.Namespace}.{proxyCodeClass.Name}";
+            
+            var namespaces="Atlantis.GrpcService.CodeGeneration";
+            var codeBuilder=new CodeBuilder(namespaces,namespaces);
+            var grpcCode=GrpcServerBuilder.Instance.GenerateGrpcProxy(_options,codeBuilder);
+            var proxyCode = GrpcServerBuilder.Instance.GenerateHandlerProxy(_options.ScanAssemblies, codeBuilder);
+            var codeAssembly = codeBuilder.BuildAsync().Result;
+            
+            namespaces = $"{proxyCode.Namespace}.{proxyCode.Name}";
             var proxy=(IMessageServicerProxy)codeAssembly.Assembly
                 .CreateInstance(namespaces);
             ObjectContainer.RegisterInstance(proxy);
 
-            namespaces=$"{grpcCodeClass.Namespace}.{grpcCodeClass.Name}";
+            namespaces=$"{grpcCode.Namespace}.{grpcCode.Name}";
             var grpcType=codeAssembly.Assembly.GetType(namespaces);
             ObjectContainer.Register(typeof(IGrpcServices),grpcType);
         }

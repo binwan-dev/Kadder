@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Atlantis.Grpc\Atlantis.Grpc.csproj" />
+    <ProjectReference Include="..\Atlantis.Grpc.Simple.Server\Atlantis.Grpc.Simple.Server.csproj" />
   </ItemGroup>
 
   <ItemGroup>

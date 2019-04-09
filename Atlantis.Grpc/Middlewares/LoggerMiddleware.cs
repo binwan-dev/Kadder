@@ -9,7 +9,6 @@ namespace Atlantis.Grpc.Middlewares
 {
     public class LoggerMiddleware:GrpcMiddlewareBase
     {
-        private readonly ILogger _grpcLogger;
         private readonly ILogger _logger;
         private readonly IJsonSerializer _jsonSerializer;
         private readonly IDictionary<Guid,DateTime> _startCallTimerDic;

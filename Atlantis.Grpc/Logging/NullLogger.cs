@@ -12,18 +12,22 @@ namespace Atlantis.Grpc.Logging
 
         public void Debug(string msg, Exception exception = null,object[] parameters=null)
         {
+            Console.WriteLine(msg);
         }
 
         public void Error(string msg, Exception exception = null,object[] parameters=null)
         {
+            Console.WriteLine(msg);
         }
 
         public void Fatal(string msg, Exception exception = null,object[] parameters=null)
         {
+            Console.WriteLine(msg);
         }
 
         public void Info(string msg, Exception exception = null,object[] parameters=null)
         {
+            Console.WriteLine(msg);
         }
 
         public void Trace(string msg, Exception exception = null,object[] parameters=null)
@@ -32,6 +36,7 @@ namespace Atlantis.Grpc.Logging
 
         public void Warn(string msg, Exception exception = null,object[] parameters=null)
         {
+            Console.WriteLine(msg);
         }
     }
 }
