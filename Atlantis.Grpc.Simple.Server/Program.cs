@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Reflection;
+using Atlantis.Grpc.Utilies;
 
 namespace Atlantis.Grpc.Simple.Server
 {
@@ -21,6 +22,9 @@ namespace Atlantis.Grpc.Simple.Server
             };
 
             var server=new GrpcServer(options);
+            ObjectContainer.Register<IPersonMessageServicer,PersonMessageServicer>(LifeScope.Single);
+
+
             server.Start();
 
             Console.WriteLine("Server is running...");

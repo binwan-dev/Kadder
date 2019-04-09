@@ -1,6 +1,8 @@
 ﻿using System;
+using Atlantis.Grpc.Utilies;
 using Atlantis.Simple;
 using Grpc.Core;
+using static Atlantis.Simple.AtlantisService;
 
 namespace Atlantis.Grpc.Simple.Client
 {
@@ -11,10 +13,19 @@ namespace Atlantis.Grpc.Simple.Client
             var channel = new Channel("127.0.0.1", 3002, ChannelCredentials.Insecure);
 
             channel.ConnectAsync().Wait();
-            ClientBase<IAtlantisService> client = new ClientBase<IAtlantisService>();
 
+            AtlantisServiceClient client=new AtlantisServiceClient(channel);
+            var message=new HelloMessage(){Name="DotNet"};
+            var result= client.Hello(message);
 
-            Console.WriteLine("Hello World!");
+            // var serailizer=new ProtobufBinarySerializer();
+            // var s=serailizer.Serialize(message);
+
+            // foreach(var b in s)
+            // {
+            //     Console.Write($" {b}");
+            // }
+            Console.WriteLine(result.Result);
         }
     }
 }

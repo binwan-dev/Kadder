@@ -49,7 +49,7 @@ namespace Atlantis.Grpc.Middlewares
             loggerData.Add(context.CallContext.Peer);
             loggerData.Add(context.Message);
             loggerData.Add(context.Result);
-            _grpcLogger.Info("msg: "+context.Result.Message+", template: The msg({@interface_name}) used time: {@elapsed_time} ms, result status: {@status}, source ip: {@source_ip}, request data: {@request_content}, response data: {@response_content}.",null,loggerData.ToArray());
+            _logger.Info("msg: "+context.Result.Message+", template: The msg({@interface_name}) used time: {@elapsed_time} ms, result status: {@status}, source ip: {@source_ip}, request data: {@request_content}, response data: {@response_content}.",null,loggerData.ToArray());
         }
 
     }

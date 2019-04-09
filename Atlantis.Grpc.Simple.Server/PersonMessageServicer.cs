@@ -1,5 +1,6 @@
 using System.Threading.Tasks;
 using Atlantis.Grpc.Utilies;
+using ProtoBuf;
 
 namespace Atlantis.Grpc.Simple.Server
 {
@@ -20,11 +21,13 @@ namespace Atlantis.Grpc.Simple.Server
         }
     }
 
+    [ProtoContract(ImplicitFields=ImplicitFields.AllPublic)]
     public class HelloMessage : BaseMessage
     {
         public string Name { get; set; }
     }
 
+    [ProtoContract(ImplicitFields=ImplicitFields.AllPublic)]
     public class HelloMessageResult : GrpcMessageResult
     {
         public string Result { get; set; }

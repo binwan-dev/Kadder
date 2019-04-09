@@ -1,0 +1,20 @@
+syntax = "proto3";
+option csharp_namespace = "Atlantis.Simple";
+package Atlantis.Simple;
+
+service AtlantisService {
+
+	rpc Hello(HelloMessage) returns(HelloMessageResult);
+
+}
+
+message HelloMessage {
+	string Name = 1;
+}
+
+
+message HelloMessageResult {
+	string Result = 1;
+}
+
+
