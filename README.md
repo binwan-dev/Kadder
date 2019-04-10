@@ -15,7 +15,7 @@ For the implementation of Server and C lient, C lient is only applicable to both
 ## 使用 Use
   1. 服务端和客户端都是C# Server&Client use language with c#:  
     Server:  
-    ```
+    ```  
 using System;
 using System.Reflection;
 using Atlantis.Grpc.Utilies;
