@@ -11,12 +11,14 @@ namespace Atlantis.Grpc
     {
         private readonly GrpcHandlerBuilder _builder;
         private readonly ILogger _logger;
+        private readonly IJsonSerializer _jsonSerializer;
 
         public GrpcMessageServicer()
         {
             _builder = ObjectContainer.Resolve<GrpcHandlerBuilder>();
             _logger = ObjectContainer.Resolve<ILoggerFactory>()
                 .Create<GrpcMessageServicer>();
+            _jsonSerializer=ObjectContainer.Resolve<IJsonSerializer>();
         }
 
         public async Task<TMessageResult> ProcessAsync<TMessage, TMessageResult>(
@@ -43,8 +45,8 @@ namespace Atlantis.Grpc
             }
             catch (Exception ex)
             {
-                _logger.Error("消息处理失败，原因：{@Message}，Msg：{@message}", ex, new object[] { message, ex.Message });
-                return new TMessageResult() { Code = ResultCode.Exception, Message = "服务处理出错，请重试！" };
+                _logger.Error($"Message execute failed! reason:{ex.Message} Request:{_jsonSerializer.Serialize(message)}", ex);
+                return new TMessageResult() { Code = ResultCode.Exception, Message = "Service handle failed, Please try again!" };
             }
 
         }

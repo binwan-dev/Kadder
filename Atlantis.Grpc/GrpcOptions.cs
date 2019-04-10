@@ -1,4 +1,5 @@
 using System.Reflection;
+using Atlantis.Grpc.Logging;
 using Atlantis.Grpc.Utilies;
 
 namespace Atlantis.Grpc
@@ -10,6 +11,7 @@ namespace Atlantis.Grpc
             ObjectContainer=new AutofacObjectContainer();
             JsonSerializer=new NewtonsoftJsonSerializer();
             BinarySerializer=new ProtobufBinarySerializer();
+            LoggerFactory=new NullLoggerFactory();
         }
         
         public string Host{get;set;}
@@ -30,6 +32,6 @@ namespace Atlantis.Grpc
 
         public IBinarySerializer BinarySerializer{get;set;}
 
-
+        public ILoggerFactory LoggerFactory{get;set;}
     }
 }

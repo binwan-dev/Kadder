@@ -1,2 +1,4 @@
 bin/
 obj/
+.builder-cache/
+.dll/

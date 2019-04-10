@@ -67,13 +67,13 @@ namespace Atlantis.Grpc
                 await action.Invoke();
             }
         }
-
-
+        
         private void RegisterThirdParty()
         {
             ObjectContainer.SetContainer(_options.ObjectContainer);
             ObjectContainer.RegisterInstance(_options.JsonSerializer);
             ObjectContainer.RegisterInstance(_options.BinarySerializer);
+            ObjectContainer.RegisterInstance<ILoggerFactory>(_options.LoggerFactory);
         }
     }
 

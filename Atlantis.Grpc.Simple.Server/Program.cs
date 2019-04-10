@@ -8,6 +8,7 @@ namespace Atlantis.Grpc.Simple.Server
     {
         static void Main(string[] args)
         {
+            Console.WriteLine(Environment.CurrentDirectory);
             var options=new GrpcServerOptions()
             {
                 Host="127.0.0.1",

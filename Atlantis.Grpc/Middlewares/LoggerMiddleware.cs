@@ -25,8 +25,7 @@ namespace Atlantis.Grpc.Middlewares
             return Task.Run(() =>
             {
                 context.StartMonitor();
-                _logger.Info($"Receive the msg, msg type is: {context.Message.GetType().FullName}, data: {_jsonSerializer.Serialize(context.Message)}");
-
+                _logger.Info(_jsonSerializer.Serialize(context.Message));
             });
         }
 
@@ -48,7 +47,18 @@ namespace Atlantis.Grpc.Middlewares
             loggerData.Add(context.CallContext.Peer);
             loggerData.Add(context.Message);
             loggerData.Add(context.Result);
-            _logger.Info("msg: "+context.Result.Message+", template: The msg({@interface_name}) used time: {@elapsed_time} ms, result status: {@status}, source ip: {@source_ip}, request data: {@request_content}, response data: {@response_content}.",null,loggerData.ToArray());
+
+            var msg=new
+            {
+                Name="GrpcStatistics",
+                Interface=context.CallContext.Method,
+                Spend=$"{context.PerformanceInfo.UsedTime} ms",
+                Status=context.Result.Status.ToString(),
+                FromIP=context.CallContext.Peer,
+                Request=context.Message,
+                Response=context.Result
+            };
+            _logger.Info(_jsonSerializer.Serialize(msg));
         }
 
     }

@@ -6,15 +6,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Atlantis.Common" Version="0.0.6" />
     <PackageReference Include="Autofac" Version="4.9.2" />
     <PackageReference Include="Grpc.Core" Version="1.19.0" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.1" />
     <PackageReference Include="protobuf-net" Version="2.4.0" />
   </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\..\common\src\Atlantis.Common.csproj" />
-  </ItemGroup>
-
 
 </Project>

@@ -25,22 +25,12 @@ namespace Atlantis.Grpc.Utilies
         {
             _container.Register<TInterface, TService>(lifeScope);
         }
-
-        public static void Register<TService>(LifeScope lifeScope = LifeScope.Single)
-        {
-            _container.Register<TService>(lifeScope); 
-        }
-
+        
         public static void Register(Type interfaceType, Type serviceType, LifeScope lifeScope = LifeScope.Single)
         {
             _container.Register(interfaceType, serviceType, lifeScope);
         }
-
-        public static void Register(Type serviceType, LifeScope lifeScope = LifeScope.Single)
-        {
-            _container.Register(serviceType, lifeScope);
-        }
-
+        
         public static void RegisterFromAssemblysForInterface(params Assembly[] assemblys)
         {
             _container.RegisterFromAssemblysForInterface(assemblys);
