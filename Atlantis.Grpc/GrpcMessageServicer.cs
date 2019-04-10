@@ -31,7 +31,7 @@ namespace Atlantis.Grpc
                 if (context.Result is TMessageResult)
                 {
                     return (TMessageResult)context.Result;
-                }
+                } 
                 else
                 {
                     return new TMessageResult()

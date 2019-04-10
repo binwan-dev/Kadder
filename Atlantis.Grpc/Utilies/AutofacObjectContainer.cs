@@ -10,9 +10,9 @@ namespace Atlantis.Grpc.Utilies
         private IContainer _container;
         private ContainerBuilder _builder;
 
-        public AutofacObjectContainer()
+        public AutofacObjectContainer(ContainerBuilder builder=null)
         {
-            _builder = new ContainerBuilder();
+            _builder = builder?? new ContainerBuilder();
         }
 
         public void Register<TInterface, TService>(LifeScope lifeScope = LifeScope.Single)
