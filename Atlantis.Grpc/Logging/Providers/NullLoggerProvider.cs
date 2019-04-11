@@ -11,7 +11,7 @@ namespace Atlantis.Grpc.Logging.Providers
 
         public ILogger CreateLogger(string name)
         {
-            return new NullLogger();
+            throw new NotImplementedException();
         }
     }
 }

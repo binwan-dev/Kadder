@@ -15,7 +15,7 @@ namespace Atlantis.Grpc.Middlewares
         
         public LoggerMiddleware(HandlerDelegateAsync next):base(next)
         {
-            _logger=ObjectContainer.Resolve<ILoggerFactory>().Create("GrpcLoggerMiddleware");
+            _logger=ObjectContainer.Resolve<ILoggerFactory>().Create<LoggerMiddleware>();
             _jsonSerializer=ObjectContainer.Resolve<IJsonSerializer>();
             _startCallTimerDic=new Dictionary<Guid,DateTime >();
         }

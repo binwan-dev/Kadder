@@ -1,6 +1,5 @@
+using System.Collections.Generic;
 using System.Reflection;
-using Atlantis.Grpc.Logging;
-using Atlantis.Grpc.Utilies;
 
 namespace Atlantis.Grpc
 {
@@ -8,10 +7,7 @@ namespace Atlantis.Grpc
     {
         public GrpcOptions()
         {
-            ObjectContainer=new AutofacObjectContainer();
-            JsonSerializer=new NewtonsoftJsonSerializer();
-            BinarySerializer=new ProtobufBinarySerializer();
-            LoggerFactory=new NullLoggerFactory();
+            ScanAssemblies=new string[0];
         }
         
         public string Host{get;set;}
@@ -20,18 +16,19 @@ namespace Atlantis.Grpc
 
         public string NamespaceName{get;set;}
 
-        public string PackageName{get;set;}
-
         public string ServiceName{get;set;}
 
-        public Assembly[] ScanAssemblies{get;set;}
+        public string[] ScanAssemblies{get;set;}
 
-        public IObjectContainer ObjectContainer{get;set;}
+        public Assembly[] GetScanAssemblies()
+        {
+            var assemblies=new List<Assembly>();
+            foreach(var item in ScanAssemblies)
+            {
+                assemblies.Add(Assembly.Load(item));
+            }
+            return assemblies.ToArray();
+        }
 
-        public IJsonSerializer JsonSerializer{get;set;}
-
-        public IBinarySerializer BinarySerializer{get;set;}
-
-        public ILoggerFactory LoggerFactory{get;set;}
     }
 }

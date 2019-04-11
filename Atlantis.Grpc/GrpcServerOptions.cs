@@ -9,6 +9,8 @@ namespace Atlantis.Grpc
         {
             IsGeneralProtoFile=true;
         }
+
+        public string PackageName{get;set;}
         
         public bool IsGeneralProtoFile{get;set;}
     }

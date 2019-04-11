@@ -1,12 +1,7 @@
-using System.Reflection;
 using Grpc.Core;
 using System;
-using ProtoBuf;
-using System.IO;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using System.Text;
-using System.Linq;
 using Atlantis.Grpc.Utilies;
 using Atlantis.Grpc.Middlewares;
 using Atlantis.Grpc.Logging;
@@ -27,12 +22,11 @@ namespace Atlantis.Grpc
             RegisterThirdParty();
             _server = new Server();
             ObjectContainer.RegisterInstance(new GrpcHandlerBuilder());
-            ObjectContainer.Register<ILoggerFactory, LoggerFactory>(LifeScope.Single);
             
             var namespaces="Atlantis.GrpcService.CodeGeneration";
             var codeBuilder=new CodeBuilder(namespaces,namespaces);
             var grpcCode=GrpcServerBuilder.Instance.GenerateGrpcProxy(_options,codeBuilder);
-            var proxyCode = GrpcServerBuilder.Instance.GenerateHandlerProxy(_options.ScanAssemblies, codeBuilder);
+            var proxyCode = GrpcServerBuilder.Instance.GenerateHandlerProxy(_options.GetScanAssemblies(), codeBuilder);
             var codeAssembly = codeBuilder.BuildAsync().Result;
             
             namespaces = $"{proxyCode.Namespace}.{proxyCode.Name}";
@@ -70,10 +64,10 @@ namespace Atlantis.Grpc
         
         private void RegisterThirdParty()
         {
-            ObjectContainer.SetContainer(_options.ObjectContainer);
-            ObjectContainer.RegisterInstance(_options.JsonSerializer);
-            ObjectContainer.RegisterInstance(_options.BinarySerializer);
-            ObjectContainer.RegisterInstance<ILoggerFactory>(_options.LoggerFactory);
+            ObjectContainer.SetContainer(GrpcConfiguration.ObjectContainer);
+            ObjectContainer.RegisterInstance(GrpcConfiguration.JsonSerializer);
+            ObjectContainer.RegisterInstance(GrpcConfiguration.BinarySerializer);
+            ObjectContainer.RegisterInstance<ILoggerFactory>(new LoggerFactory());
         }
     }
 

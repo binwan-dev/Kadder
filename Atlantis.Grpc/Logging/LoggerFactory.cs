@@ -17,20 +17,12 @@ namespace Atlantis.Grpc.Logging
         
         public virtual ILogger Create<T>()
         {
-            return new NullLogger();
-            // return _loggerProvider.CreateLogger(typeof(T).Name);
+            return GrpcConfiguration.LoggerFunc(typeof(T));
         }
-
-        public virtual ILogger Create(string name)
-        {
-            return new NullLogger();
-            // return _loggerProvider.CreateLogger(name);
-        }
-
+        
         public virtual ILogger Create(Type type)
         {
-            return new NullLogger();
-            // return _loggerProvider.CreateLogger(type.Name);
+            return GrpcConfiguration.LoggerFunc(type);
         }
 
         // protected abstract ProviderSetting GetSetting();

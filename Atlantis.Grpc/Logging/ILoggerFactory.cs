@@ -6,8 +6,6 @@ namespace Atlantis.Grpc.Logging
     {
         ILogger Create<T>();
 
-        ILogger Create(string name);
-
         ILogger Create(Type type);
     }
 }

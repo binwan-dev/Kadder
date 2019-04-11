@@ -111,7 +111,7 @@ namespace Atlantis.Grpc
             }
             
             var types = RefelectionHelper.GetImplInterfaceTypes(
-                typeof(IMessagingServicer), true, options.ScanAssemblies);
+                typeof(IMessagingServicer), true, options.GetScanAssemblies());
 
             var codeClass = new ClassDescripter("GrpcService","Atlantis.Grpc")
                 .SetAccess(AccessType.Public)

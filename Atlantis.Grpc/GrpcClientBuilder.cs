@@ -16,14 +16,14 @@ namespace Atlantis.Grpc
         { }
 
         public CodeBuilder GenerateHandler(
-            GrpcOptions options,CodeBuilder codeBuilder=null)
+            GrpcOptions options,GrpcClient client,CodeBuilder codeBuilder=null)
         {
             if(codeBuilder==null)
             {
                 codeBuilder=CodeBuilder.Default;
             }
             var types = RefelectionHelper.GetImplInterfaceTypes(
-                typeof(IMessagingServicer), true, options.ScanAssemblies);
+                typeof(IMessagingServicer), true, options.GetScanAssemblies());
 
             foreach (var typeService in types)
             {
@@ -63,7 +63,7 @@ namespace Atlantis.Grpc
                         .SetParams(
                             new ParameterDescripter(
                                 parameters[0].ParameterType.Name,requestName))
-                        .AppendCode($@"var client=GrpcClientInvokerExtension.TypeDic[typeof({typeService.Name})];")
+                        .AppendCode($@"var client=GrpcClientExtension.ClientDic[""{client.ID.ToString()}""];")
                         .AppendCode($@"return await client.CallAsync<{parameters[0].ParameterType.Name},{responseType.Name}>({requestName}, ""{methodName}"");"))
                         .AddUsing(responseType.Namespace)
                         .AddUsing(parameters[0].ParameterType.Namespace);
@@ -71,6 +71,7 @@ namespace Atlantis.Grpc
                 codeBuilder.CreateClass(classDescripter)
                     .AddAssemblyRefence(typeService.Assembly.Location);
             }
+            codeBuilder.AddAssemblyRefence(this.GetType().Assembly.Location);
             return codeBuilder;
         }
 

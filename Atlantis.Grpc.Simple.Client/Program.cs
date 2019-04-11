@@ -1,10 +1,8 @@
 ﻿using System;
 using System.Reflection;
-using Atlantis.Grpc.Simple.Server;
+using System.Threading.Tasks;
 using Atlantis.Grpc.Utilies;
-// using Atlantis.Simple;
-using Grpc.Core;
-// using static Atlantis.Simple.AtlantisService;
+using ProtoBuf;
 
 namespace Atlantis.Grpc.Simple.Client
 {
@@ -17,11 +15,10 @@ namespace Atlantis.Grpc.Simple.Client
                 Host="127.0.0.1",
                 Port=3002,
                 NamespaceName="Atlantis.Simple",
-                PackageName="Atlantis.Simple",
                 ServiceName="AtlantisService",
-                ScanAssemblies=new Assembly[]
+                ScanAssemblies=new string[]
                 {
-                    typeof(IPersonMessageServicer).Assembly
+                    typeof(IPersonMessageServicer).Assembly.FullName
                 }
             };
             var client=new GrpcClient(options);
@@ -47,5 +44,35 @@ namespace Atlantis.Grpc.Simple.Client
             // }
             Console.WriteLine(result.Result);
         }
+        
+    }
+
+    public interface IPersonMessageServicer:IMessagingServicer
+    {
+        Task<HelloMessageResult> HelloAsync(HelloMessage message);
+    }
+
+    public class PersonMessageServicer : IPersonMessageServicer
+    {
+        public Task<HelloMessageResult> HelloAsync(HelloMessage message)
+        {
+            var result = $"Hello, {message.Name}";
+            return Task.FromResult(new HelloMessageResult()
+            {
+                Result = result
+            });
+        }
+    }
+
+    [ProtoContract(ImplicitFields=ImplicitFields.AllPublic)]
+    public class HelloMessage : BaseMessage
+    {
+        public string Name { get; set; }
+    }
+
+    [ProtoContract(ImplicitFields=ImplicitFields.AllPublic)]
+    public class HelloMessageResult : GrpcMessageResult
+    {
+        public string Result { get; set; }
     }
 }
