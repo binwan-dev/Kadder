@@ -6,20 +6,26 @@ namespace Atlantis.Grpc
 {
     public class GrpcConfiguration
     {
+
+        public static IObjectContainer ObjectContainer;
+
+        public static IJsonSerializer JsonSerializer;
+
+        public static IBinarySerializer BinarySerializer;
+
+        public static Func<Type, ILogger> LoggerFunc;
+
         static GrpcConfiguration()
         {
             ObjectContainer = new AutofacObjectContainer();
             JsonSerializer = new NewtonsoftJsonSerializer();
             BinarySerializer = new ProtobufBinarySerializer();
-            LoggerFunc = t => new ConsoleLogger(t.FullName);
+            LoggerFunc = GetDefaultLogger;
         }
 
-        public static IObjectContainer ObjectContainer { get; set; }
-
-        public static IJsonSerializer JsonSerializer { get; set; }
-
-        public static IBinarySerializer BinarySerializer { get; set; }
-
-        public static Func<Type, ILogger> LoggerFunc { get; set; }
+        public static ILogger GetDefaultLogger(Type t)
+        {
+            return new ConsoleLogger(t.FullName); 
+        }
     }
 }
