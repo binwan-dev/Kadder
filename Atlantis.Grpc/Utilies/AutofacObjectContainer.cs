@@ -7,7 +7,7 @@ namespace Atlantis.Grpc.Utilies
 {
     public class AutofacObjectContainer:IObjectContainer
     {
-        private IContainer _container;
+        private ILifetimeScope _container;
         private ContainerBuilder _builder;
 
         public AutofacObjectContainer(ContainerBuilder builder=null)
@@ -47,9 +47,14 @@ namespace Atlantis.Grpc.Utilies
 
         }
 
+        public void Release()
+        {
+            throw new NotImplementedException();
+        }
+
         public T Resolve<T>()
         {
-            if (_container == null) _container = _builder.Build();
+            if (_container == null) _container = _builder.Build().BeginLifetimeScope();
             return _container.Resolve<T>();
         }
 
@@ -57,6 +62,19 @@ namespace Atlantis.Grpc.Utilies
         {
             if (_container == null) _container = _builder.Build();
             return _container.Resolve(type);
+        }
+
+        public T ResolveWithLifeScope<T>()
+        {
+            if(_container==null)
+            {
+                _container=_builder.Build();
+            }
+            
+            using(var scope=_container.BeginLifetimeScope())
+            {
+                return scope.Resolve<T>();
+            }
         }
     }
 

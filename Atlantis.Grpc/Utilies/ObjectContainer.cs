@@ -50,5 +50,11 @@ namespace Atlantis.Grpc.Utilies
         {
             return _container.Resolve(type);
         }
+
+        public static T ResolveWithLifeScope<T>()
+        {
+            return _container.ResolveWithLifeScope<T>();
+        }
+
     }
 }

@@ -55,7 +55,7 @@ namespace Atlantis.Grpc
                         noResult.AppendLine(
                             $@"if(string.Equals(message.GetTypeFullName(),""{parameters[0].ParameterType.FullName}""))
                                {{
-                                   return async (m)=>await {{ObjectContainer.Resolve<{type.Name}>().{method.Name}(message as {parameters[0].ParameterType.FullName});}} ;   
+                                   return async (m)=>await {{ObjectContainer.ResolveWithLifeScope<{type.Name}>().{method.Name}(message as {parameters[0].ParameterType.FullName});}} ;   
                                }}");
                     }
                     else
@@ -63,7 +63,7 @@ namespace Atlantis.Grpc
                         needResult.AppendLine(
                             $@"if(string.Equals(message.GetTypeFullName(),""{parameters[0].ParameterType.FullName}""))
                                {{
-                                   return async (m)=>{{return (await ObjectContainer.Resolve<{type.Name}>().{method.Name}(message as {parameters[0].ParameterType.FullName})) as TMessageResult;}} ;   
+                                   return async (m)=>{{return (await ObjectContainer.ResolveWithLifeScope<{type.Name}>().{method.Name}(message as {parameters[0].ParameterType.FullName})) as TMessageResult;}} ;   
                                }}");
                     }
                     codeBuilder.AddAssemblyRefence(parameters[0].ParameterType.Assembly.Location);

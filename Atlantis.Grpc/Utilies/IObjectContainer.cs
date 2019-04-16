@@ -19,6 +19,10 @@ namespace Atlantis.Grpc.Utilies
 
         T Resolve<T>();
 
+        T ResolveWithLifeScope<T>();
+
         object Resolve(Type @type);
+
+        void Release();
     }
 }

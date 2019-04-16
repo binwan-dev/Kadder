@@ -7,7 +7,7 @@ using Atlantis.Grpc.Utilies;
 using Grpc.Core;
 
 namespace Atlantis.Grpc
-{
+{   
     public class GrpcClient
     {
         private static bool _ifloaded = false;
