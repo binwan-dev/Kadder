@@ -7,12 +7,21 @@ namespace Atlantis.Grpc.Utilies
 {
     public class AutofacObjectContainer:IObjectContainer
     {
-        private ILifetimeScope _container;
+        private IContainer _container;
         private ContainerBuilder _builder;
 
         public AutofacObjectContainer(ContainerBuilder builder=null)
         {
             _builder = builder?? new ContainerBuilder();
+        }
+
+        public IContainer Build()
+        {
+            if(_container==null)
+            {
+                _container=_builder.Build();
+            }
+            return _container;
         }
 
         public void Register<TInterface, TService>(LifeScope lifeScope = LifeScope.Single)
@@ -54,7 +63,7 @@ namespace Atlantis.Grpc.Utilies
 
         public T Resolve<T>()
         {
-            if (_container == null) _container = _builder.Build().BeginLifetimeScope();
+            if (_container == null) _container = _builder.Build();
             return _container.Resolve<T>();
         }
 
