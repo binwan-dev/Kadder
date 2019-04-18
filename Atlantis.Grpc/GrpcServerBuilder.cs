@@ -14,20 +14,20 @@ namespace Atlantis.Grpc
 {
     public class GrpcServerBuilder
     {
-        public static GrpcServerBuilder Instance=new GrpcServerBuilder();
+        public static GrpcServerBuilder Instance = new GrpcServerBuilder();
         private IList<string> _messages = new List<string>();
 
         private GrpcServerBuilder()
-        {}
-        
+        { }
+
         public ClassDescripter GenerateHandlerProxy(
-            Assembly[] assemblies,CodeBuilder codeBuilder=null)
+            Assembly[] assemblies, CodeBuilder codeBuilder = null)
         {
-            if(codeBuilder==null)
+            if (codeBuilder == null)
             {
-                codeBuilder=CodeBuilder.Default;
+                codeBuilder = CodeBuilder.Default;
             }
-            
+
             var types = RefelectionHelper.GetImplInterfaceTypes(
                 typeof(IMessagingServicer), true, assemblies);
 
@@ -50,10 +50,11 @@ namespace Atlantis.Grpc
                 {
                     var parameters = method.GetParameters();
                     if (parameters.Length != 1) continue;
+                    var requestName = GetRequestName(method);
                     if (method.ReturnType == typeof(void))
                     {
                         noResult.AppendLine(
-                            $@"if(string.Equals(message.GetTypeFullName(),""{parameters[0].ParameterType.FullName}""))
+                            $@"if(string.Equals(message.GetTypeFullName(),""{requestName}""))
                                {{
                                    return async (m)=>await {{ObjectContainer.ResolveWithLifeScope<{type.Name}>().{method.Name}(message as {parameters[0].ParameterType.FullName});}} ;   
                                }}");
@@ -61,7 +62,7 @@ namespace Atlantis.Grpc
                     else
                     {
                         needResult.AppendLine(
-                            $@"if(string.Equals(message.GetTypeFullName(),""{parameters[0].ParameterType.FullName}""))
+                            $@"if(string.Equals(message.GetTypeFullName(),""{requestName}""))
                                {{
                                    return async (m)=>{{return (await ObjectContainer.ResolveWithLifeScope<{type.Name}>().{method.Name}(message as {parameters[0].ParameterType.FullName})) as TMessageResult;}} ;   
                                }}");
@@ -81,9 +82,9 @@ namespace Atlantis.Grpc
                 .SetReturn("Func<TMessage,Task<TMessageResult>>")
                 .SetCode(needResult.ToString())
                 .SetParams(
-                    new ParameterDescripter("TMessage","message"))
+                    new ParameterDescripter("TMessage", "message"))
                 .SetTypeParameters(
-                    new TypeParameterDescripter("TMessageResult","class"),
+                    new TypeParameterDescripter("TMessageResult", "class"),
                     new TypeParameterDescripter("TMessage", "BaseMessage")),
                 new MethodDescripter("GetHandleDelegate<TMessage>")
                 .SetAccess(AccessType.Public)
@@ -93,7 +94,7 @@ namespace Atlantis.Grpc
                     new ParameterDescripter("TMessage", "message"))
                 .SetTypeParameters(
                     new TypeParameterDescripter("TMessage", "BaseMessage")));
-                    
+
             codeBuilder
                 .AddAssemblyRefence(assemblies.Select(p => p.Location).ToArray())
                 .AddAssemblyRefence(Assembly.GetExecutingAssembly().Location)
@@ -103,17 +104,17 @@ namespace Atlantis.Grpc
         }
 
         public ClassDescripter GenerateGrpcProxy(
-            GrpcServerOptions options,CodeBuilder codeBuilder=null)
+            GrpcServerOptions options, CodeBuilder codeBuilder = null)
         {
-            if(codeBuilder==null)
+            if (codeBuilder == null)
             {
-                codeBuilder=CodeBuilder.Default;
+                codeBuilder = CodeBuilder.Default;
             }
-            
+
             var types = RefelectionHelper.GetImplInterfaceTypes(
                 typeof(IMessagingServicer), true, options.GetScanAssemblies());
 
-            var codeClass = new ClassDescripter("GrpcService","Atlantis.Grpc")
+            var codeClass = new ClassDescripter("GrpcService", "Atlantis.Grpc")
                 .SetAccess(AccessType.Public)
                 .SetBaseType("IGrpcServices")
                 .AddUsing("using Grpc.Core;")
@@ -130,7 +131,7 @@ namespace Atlantis.Grpc
                     new ConstructorDescripter("GrpcService")
                     .SetCode("_binarySerializer=ObjectContainer.Resolve<IBinarySerializer>();\n_messageServicer=new GrpcMessageServicer();")
                     .SetAccess(AccessType.Public));
-                
+
             var bindServicesCode = new StringBuilder("return ServerServiceDefinition.CreateBuilder()\n");
             var protoServiceCode = new StringBuilder($"service {options.ServiceName} {{");
             var protoMessageCode = new StringBuilder();
@@ -179,21 +180,22 @@ namespace Atlantis.Grpc
             }
 
             codeBuilder.CreateClass(codeClass);
-            
+
             return codeClass;
 
             void CreateCallCode(MethodInfo method, ParameterInfo parameter, Type[] baseInterfaces)
             {
+                var requestName = GetRequestName(method);
                 codeClass
                     .CreateMember(
-                        new MethodDescripter($"{method.Name.Replace("Async", "")}",true)
+                        new MethodDescripter($"{method.Name.Replace("Async", "")}", true)
                         .AppendCode(
-                            $@"request.SetTypeFullName(""{parameter.ParameterType.FullName}"");
+                            $@"request.SetTypeFullName(""{requestName}"");
                             return await _messageServicer.ProcessAsync<{parameter.ParameterType.Name},{GetMethodReturn(method.ReturnType).Name}>(request,context);")
                         .SetReturn($"Task<{GetMethodReturn(method.ReturnType).Name}>")
                         .SetParams(
                             new ParameterDescripter(parameter.ParameterType.Name, "request"),
-                            new ParameterDescripter("ServerCallContext","context"))
+                            new ParameterDescripter("ServerCallContext", "context"))
                         .SetAccess(AccessType.Public))
                     .AddUsing($"using {parameter.ParameterType.Namespace};")
                     .AddUsing($"using {GetMethodReturn(method.ReturnType).Namespace};");
@@ -330,6 +332,22 @@ namespace Atlantis.Grpc
             {
                 return genericTypes[0];
             }
+        }
+
+        private static string GetRequestName(MethodInfo method)
+        {
+            var name = $"{method.DeclaringType.FullName}.{method.Name}";
+            var parameters = method.GetParameters();
+            if(parameters.Length==0)
+            {
+                return name;
+            }
+
+            foreach(var param in parameters)
+            {
+                name += $"-{param.ParameterType.Name}";
+            }
+            return name;
         }
 
     }
