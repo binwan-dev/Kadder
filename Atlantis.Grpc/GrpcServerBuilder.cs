@@ -37,6 +37,7 @@ namespace Atlantis.Grpc
                 .SetAccess(AccessType.Public)
                 .SetBaseType("IMessageServicerProxy")
                 .AddUsing(
+                    "using System;",
                     "using Atlantis.Grpc.Utilies;",
                     "using System.Threading.Tasks;");
 

@@ -45,7 +45,7 @@ namespace Atlantis.Grpc
             }
             catch (Exception ex)
             {
-                _logger.Error($"Message execute failed! reason:{ex.Message} Request:{_jsonSerializer.Serialize(message)}", ex);
+                _logger.Error($"Message execute failed! reason:{ex.GetExceptionMessage()} Request:{_jsonSerializer.Serialize(message)}", ex);
                 return new TMessageResult() { Code = ResultCode.Exception, Message = "Service handle failed, Please try again!" };
             }
 

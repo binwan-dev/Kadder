@@ -98,11 +98,15 @@ namespace Atlantis.Grpc.Utilies
         public static string GetExceptionMessage(this Exception exception)
         {
             StringBuilder error = new StringBuilder(exception.Message);
+            var trim="  ";
             while(true)
             {
                 if (exception.InnerException != null)
                 {
-                    error.Append($" --> {exception.InnerException.Message}");
+                    error.AppendLine($"{trim}InnerException");
+                    error.AppendLine($"{trim} Message --> {exception.InnerException.Message}");
+                    error.AppendLine($"{trim} StackTrace --> {exception.InnerException.StackTrace}");
+
                     exception = exception.InnerException;
                 }
                 else
