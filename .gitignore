@@ -3,3 +3,4 @@ obj/
 .builder-cache/
 .dll/
 /.vs/Atlantis.Grpc/v15
+.idea/
