@@ -14,6 +14,7 @@ namespace Kadder.Simple.Server
         public Task<HelloMessageResult> HelloAsync(HelloMessage message)
         {
             var result = $"Hello, {message.Name}";
+            throw new System.NotImplementedException("dddddddddd");
             return Task.FromResult(new HelloMessageResult()
             {
                 Result = result

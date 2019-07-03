@@ -24,9 +24,9 @@ namespace Atlantis.Grpc.Simple.Client
                 }
             };
 
-            var services=new ServiceCollection();
+            IServiceCollection services=new ServiceCollection();
             services.AddLogging();
-            services.UseKadderGrpcClient(builder=>
+            services.AddKadderGrpcClient(builder=>
             {
                 builder.RegClient(options);
             });

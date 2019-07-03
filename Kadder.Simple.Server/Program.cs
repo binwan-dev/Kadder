@@ -4,6 +4,7 @@ using Kadder.Middlewares;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Console;
+using Kadder;
 
 namespace Kadder.Simple.Server
 {
@@ -26,9 +27,9 @@ namespace Kadder.Simple.Server
             };
             //GrpcConfiguration.LoggerFactory=new Loggerfac();
 
-            var services=new ServiceCollection();
+            IServiceCollection services=new ServiceCollection();
             services.AddLogging();
-            services.UseKadderGrpcServer(builder=>
+            services.AddKadderGrpcServer(builder=>
             {
                  builder.Options= options;
                  builder.AddMiddleware<TestMiddleware>();

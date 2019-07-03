@@ -10,8 +10,8 @@ namespace Kadder
 {
     public static class GrpcConfiguration
     {
-        public static ServiceCollection UseKadderGrpcClient(
-            this ServiceCollection services,
+        public static IServiceCollection AddKadderGrpcClient(
+            this IServiceCollection services,
             Action<GrpcClientBuilder> builderAction)
         {
             var builder = new GrpcClientBuilder();
@@ -42,8 +42,8 @@ namespace Kadder
             return provider;
         }
 
-        public static ServiceCollection UseKadderGrpcServer(
-            this ServiceCollection services,
+        public static IServiceCollection AddKadderGrpcServer(
+            this IServiceCollection services,
             Action<GrpcServerBuilder> builderAction)
         {
             var builder = new GrpcServerBuilder();
