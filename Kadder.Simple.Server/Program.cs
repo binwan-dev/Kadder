@@ -13,31 +13,26 @@ namespace Kadder.Simple.Server
         static void Main(string[] args)
         {
             Console.WriteLine(Environment.CurrentDirectory);
-            var options=new GrpcServerOptions()
-            {
-                Host="127.0.0.1",
-                Port=3002,
-                NamespaceName="Atlantis.Simple",
-                PackageName="Atlantis.Simple",
-                ServiceName="AtlantisService",
-                ScanAssemblies=new string[]
-                {
-                    typeof(Program).Assembly.FullName
-                }
-            };
-            //GrpcConfiguration.LoggerFactory=new Loggerfac();
-
-            IServiceCollection services=new ServiceCollection();
+            
+            var services=new ServiceCollection();
             services.AddLogging();
-            services.AddKadderGrpcServer(builder=>
+            services.AddKadderGrpcServer(builder =>
             {
-                 builder.Options= options;
-                 builder.AddMiddleware<TestMiddleware>();
+                builder.Options=new GrpcServerOptions()
+                {
+                    Host="127.0.0.1",
+                    Port=3002,
+                    NamespaceName="Atlantis.Simple",
+                    ServiceName="AtlantisService",
+                    ScanAssemblies=new string[]
+                    {
+                        typeof(Program).Assembly.FullName
+                    }
+                };
             });
             services.AddScoped<IPersonMessageServicer, PersonMessageServicer>();
-
+            
             var provider=services.BuildServiceProvider();
-
             provider.StartKadderGrpc();
 
             Console.WriteLine("Server is running...");

@@ -1,21 +1,21 @@
-Atlantis.Grpc
+Kadder
 =============================
-  该组件对Grpc在C#下的一个封装,依赖于Grpc.Core.使用代码生成dll的方式对GRPC进行包装,与传统的中间件相比,性能,易用性都有提高.组件实现了
-Server与Client端的实现,Client仅适用于Server和Client都是C#环境.  
-  组件默认带有IOC接口以及Logger和Json等组件,如需自定义集成,请在GrpcOption中传入相应的实现即可.  
-  This component solves the encapsulation of Grpc under C# and relies on Grpc. Core. It uses code generation DLL to package GRPC. Compared with traditional middleware, the code intrusion, performance and usability are improved. Component implementation.
-For the implementation of Server and C lient, C lient is only applicable to both Server and C lient in C_environment.  
-  Components default with IOC interface and Logger and Json and other components, if you need to customize integration, please pass in the corresponding implementation in GrpcOption.  
+[![](https://api.travis-ci.org/felixwan-git/Kadder.svg?branch=master)](https://www.travis-ci.org/felixwan-git/Kadder)
+
+   Grpc框架的一个封装框架，提供了本地接口调用级，相比起原生实践要简单很多，这几乎是c#语言中grpc调用最简单的实践了。
+
+   本框架不存在任何反射接口代码，其使用的是代码生成工具，不存在任何性能消耗，同时做到简单易用。
 
 ## 安装 Install
   ```
-  dotnet add package Atlantis.Grpc
+  dotnet add package Kadder
   ```
-  
+
 ## 使用 Use
-  客户端仅适用于使用服务端是C#语言并且适用接口编程模式,当使用接口编程,将会节省很多不必要的麻烦,请参考以下代码 Client case only use to c# language and interface programing for server.:  
-    当依赖接口后,客户端调用只需要从 GrpcClient中GetService即可,无需使用proto生成C#代码再去调用. if you use interface for service, client only use : GrpcClient.GetService<Interface> to call rpc service, don't generate c# class from proto.
-    Server:  
+1. 客户端和服务端都是c#情况：
+
+   Server:   
+
 ```csharp  
 using System;
 using System.Reflection;
@@ -28,22 +28,17 @@ namespace Atlantis.Grpc.Simple.Server
         static void Main(string[] args)
         {
             Console.WriteLine(Environment.CurrentDirectory);
-            var options=new GrpcServerOptions()
+            
+            var services=new ServiceCollection();
+            services.AddLogging();
+            services.AddKadderGrpcServer(builder =>
             {
-                Host="127.0.0.1",
-                Port=3002,
-                NamespaceName="Atlantis.Simple",
-                PackageName="Atlantis.Simple",
-                ServiceName="AtlantisService",
-                ScanAssemblies=new Assembly[]
-                {
-                    typeof(Program).Assembly
-                }
-            };
-
-            var server=new GrpcServer(options);
-            ObjectContainer.Register<IPersonMessageServicer,PersonMessageServicer>(LifeScope.Single);
-            server.Start();
+                builder.Options=new GrpcServerOptions();
+            });
+            services.AddScoped<IPersonMessageServicer, PersonMessageServicer>();
+            
+            var provider=services.BuildServiceProvider();
+            provider.StartKadderGrpc();
 
             Console.WriteLine("Server is running...");
             Console.ReadLine();
@@ -59,27 +54,11 @@ namespace Atlantis.Grpc.Simple.Server
     {
         public Task<HelloMessageResult> HelloAsync(HelloMessage message)
         {
-            var result = $"Hello, {message.Name}";
-            return Task.FromResult(new HelloMessageResult()
-            {
-                Result = result
-            });
+            ...
         }
     }
-
-    [ProtoContract(ImplicitFields=ImplicitFields.AllPublic)]
-    public class HelloMessage : BaseMessage
-    {
-        public string Name { get; set; }
-    }
-
-    [ProtoContract(ImplicitFields=ImplicitFields.AllPublic)]
-    public class HelloMessageResult : GrpcMessageResult
-    {
-        public string Result { get; set; }
-    }
 }
-```  
+```
     Client:
 ```csharp
 using System;
@@ -96,20 +75,19 @@ namespace Atlantis.Grpc.Simple.Client
     {
         static void Main(string[] args)
         {
-            var options=new GrpcOptions()
+           var options=new GrpcOptions();
+
+            IServiceCollection services=new ServiceCollection();
+            services.AddLogging();
+            services.AddKadderGrpcClient(builder=>
             {
-                Host="127.0.0.1",
-                Port=3002,
-                NamespaceName="Atlantis.Simple",
-                PackageName="Atlantis.Simple",
-                ServiceName="AtlantisService",
-                ScanAssemblies=new Assembly[]
-                {
-                    typeof(IPersonMessageServicer).Assembly
-                }
-            };
-            var client=new GrpcClient(options);
-            var servicer=client.GetService<IPersonMessageServicer>();
+                builder.RegClient(options);
+            });
+            
+            var provider=services.BuildServiceProvider();
+            provider.ApplyKadderGrpcClient();
+            
+            var servicer=provider.GetService<IPersonMessageServicer>();
             var message=new HelloMessage(){Name="DotNet"};
             var result=servicer.HelloAsync(message).Result;
             Console.WriteLine(result.Result);
@@ -117,4 +95,4 @@ namespace Atlantis.Grpc.Simple.Client
     }
 }
 ```
-    
+
