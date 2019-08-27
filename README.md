@@ -11,7 +11,18 @@ Kadder
   dotnet add package Kadder
   ```
 
+## 功能
+
+- [x] 普通异步RPC请求调用
+- [x] 中间件扩展
+- [x] 兼容第三方序列化（Json、MessagePack等）
+- [x] 支持.NetCore ServiceCollection 注册方式
+- [x] 服务端支持生成Proto
+- [ ] 客户端支持Proto调用
+- [ ] 流式调用（Stream call）
+
 ## 使用 Use
+
 1. 客户端和服务端都是c#情况：
 
    Server:   
