@@ -44,7 +44,7 @@ namespace Kadder
             catch (Exception ex)
             {
                 _log.LogError(ex,$"Message execute failed! reason:{ex.GetExceptionMessage()} Request:{_jsonSerializer.Serialize(message)}");
-                throw new RpcException(new Status(StatusCode.Internal,ex.GetExceptionMessage()));
+                throw;
             }
 
         }
