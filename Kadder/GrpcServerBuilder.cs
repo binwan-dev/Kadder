@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Grpc.Core.Interceptors;
 using Kadder.Middlewares;
 using Kadder.Utilies;
 using Microsoft.Extensions.Options;
@@ -10,7 +11,8 @@ namespace Kadder
     {
         public GrpcServerBuilder()
         {
-            Middlewares=new List<Type>();
+            Middlewares = new List<Type>();
+            Interceptors = new List<Type>();
         }
         
         public GrpcServerOptions Options{get;set;}
@@ -21,11 +23,19 @@ namespace Kadder
 
         internal IList<Type> Middlewares{get;private set;}
 
+        internal IList<Type> Interceptors { get; private set; }
+
         public static IServiceProvider ServiceProvider{get;set;}
 
-        public GrpcServerBuilder AddMiddleware<T>()where T:GrpcMiddlewareBase
+        public GrpcServerBuilder AddMiddleware<T>() where T : GrpcMiddlewareBase
         {
             Middlewares.Add(typeof(T));
+            return this;
+        }
+
+        public GrpcServerBuilder AddInterceptor<T>() where T : Interceptor
+        {
+            Interceptors.Add(typeof(T));
             return this;
         }
 

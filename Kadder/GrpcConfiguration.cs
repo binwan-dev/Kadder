@@ -1,6 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Atlantis.Common.CodeGeneration;
+using Grpc.Core.Interceptors;
 using Kadder.Middlewares;
 using Kadder.Utilies;
 using Microsoft.Extensions.DependencyInjection;
@@ -11,22 +13,28 @@ namespace Kadder
     public static class GrpcConfiguration
     {
         public static IServiceCollection AddKadderGrpcClient(
-            this IServiceCollection services,
-            Action<GrpcClientBuilder> builderAction)
+            this IServiceCollection services, Action<GrpcClientBuilder> builderAction)
         {
             var builder = new GrpcClientBuilder();
             builderAction(builder);
-            services.AddSingleton<GrpcClientBuilder>();
-            services.AddSingleton<GrpcServiceCallBuilder>();
+
+            var serviceCallBuilder = new GrpcServiceCallBuilder();
+            services.AddSingleton(builder);
+            services.AddSingleton(serviceCallBuilder);
             services.RegSerializer(null, builder.BinarySerializer);
 
-            var provider = services.BuildServiceProvider();
-            var serviceCallBuilder = provider.GetService<GrpcServiceCallBuilder>();
-            var binarySerializer = provider.GetService<IBinarySerializer>();
-
-            foreach (var options in builder.ClientOptions)
+            foreach(var interceptor in builder.Interceptors)
             {
-                var grpcClient = new GrpcClient(options, serviceCallBuilder, binarySerializer);
+                services.AddSingleton(interceptor);
+            }
+
+            foreach (var clientMetadata in builder.ClientMetadatas)
+            {
+                var grpcClient = new GrpcClient(clientMetadata,builder, serviceCallBuilder);
+                foreach(var interceptor in clientMetadata.PrivateInterceptors)
+                {
+                    services.AddSingleton(interceptor);
+                }
                 foreach (var item in grpcClient.GrpcServiceDic)
                 {
                     services.AddSingleton(item.Key, item.Value);
@@ -48,19 +56,24 @@ namespace Kadder
         {
             var builder = new GrpcServerBuilder();
             builderAction(builder);
-            services.AddSingleton<GrpcServerBuilder>(builder);
+            var serviceBuilder = new GrpcServiceBuilder();
+            services.AddSingleton(builder);
             services.RegSerializer(builder.JsonSerializer, builder.BinarySerializer);
             services.AddSingleton<GrpcHandlerBuilder>();
-            services.AddSingleton<GrpcServiceBuilder>();
+            services.AddSingleton(serviceBuilder);
             services.AddSingleton<GrpcMessageServicer>();
             foreach (var item in builder.Middlewares)
             {
                 Middlewares.GrpcHandlerDirector.AddMiddleware(item);
             }
+            foreach (var interceptor in builder.Interceptors)
+            {
+                services.AddSingleton(interceptor);
+            }
 
-            var provider = services.BuildServiceProvider();
-            GrpcServerBuilder.ServiceProvider = provider;
-            var serviceBuilder = provider.GetService<GrpcServiceBuilder>();
+            //var provider = services.BuildServiceProvider();
+            //GrpcServerBuilder.ServiceProvider = provider;
+            //var serviceBuilder = provider.GetService<GrpcServiceBuilder>();
 
             var namespaces = "Kadder.CodeGeneration";
             var codeBuilder = new CodeBuilder(namespaces, namespaces);
@@ -83,8 +96,7 @@ namespace Kadder
             return services;
         }
 
-        public static IServiceProvider StartKadderGrpc(
-            this IServiceProvider provider)
+        public static IServiceProvider StartKadderGrpc(this IServiceProvider provider)
         {   
             GrpcServerBuilder.ServiceProvider = provider;
             var server = provider.GetService<GrpcServer>();
@@ -92,8 +104,7 @@ namespace Kadder
             return provider;
         }
 
-        public static IServiceProvider ShutdownKadderGrpc(
-            this IServiceProvider provider, Func<Task> action = null)
+        public static IServiceProvider ShutdownKadderGrpc(this IServiceProvider provider, Func<Task> action = null)
         {
             var server = provider.GetService<GrpcServer>();
             server.ShutdownAsync(action).Wait();
