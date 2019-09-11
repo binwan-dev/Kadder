@@ -75,10 +75,10 @@ namespace Kadder
                 methodName,
                 requestMarshaller,
                 responseMarshaller);
-
+            
             var invoker = await GetInvokerAsync();
             var result = invoker.AsyncUnaryCall<TRequest, TResponse>(
-                method, null, new CallOptions(), request);
+                method, $"{_options.Host}:{_options.Port}", new CallOptions(), request);
 
             return await result.ResponseAsync;
         }
