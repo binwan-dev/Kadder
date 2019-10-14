@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Grpc.Core.Interceptors;
 using Kadder.Utilies;
 using Microsoft.Extensions.Options;
 
@@ -7,22 +8,30 @@ namespace Kadder
 {
     public class GrpcClientBuilder
     {
-        private readonly IList<GrpcOptions> _clientOptions;
+        internal IList<Type> Interceptors { get; }
 
-        public GrpcClientBuilder()
-        {
-            _clientOptions = new List<GrpcOptions>();
-        }
-
-        public static IServiceProvider ServiceProvider{get;set;}
+        public static IServiceProvider ServiceProvider { get; set; }
 
         public IBinarySerializer BinarySerializer { get; set; }
 
-        internal IList<GrpcOptions> ClientOptions=>_clientOptions;
+        internal IList<GrpcClientMetadata> ClientMetadatas { get; private set; }
 
-        public GrpcClientBuilder RegClient(GrpcOptions options)
+        public GrpcClientBuilder()
         {
-            _clientOptions.Add(options);
+            Interceptors = new List<Type>();
+            ClientMetadatas = new List<GrpcClientMetadata>();
+        }
+
+        public GrpcClientMetadata RegClient(GrpcOptions options)
+        {
+            var metadata = new GrpcClientMetadata(options);
+            ClientMetadatas.Add(metadata);
+            return metadata;
+        }
+
+        public GrpcClientBuilder RegShareInterceptor<T>() where T : Interceptor
+        {
+            Interceptors.Add(typeof(T));
             return this;
         }
     }

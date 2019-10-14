@@ -1,11 +1,17 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <None Remove="Atlantis.GrpcService.CodeGeneration_dll" />
+    <None Remove="Atlantis.Simple.proto" />
+    <None Remove="Kadder.CodeGeneration_dll" />
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Kadder\Kadder.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Grpc.Tools" Version="1.19.0">
+    <PackageReference Include="Grpc.Tools" Version="2.23.0">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
