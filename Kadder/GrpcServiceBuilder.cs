@@ -16,6 +16,7 @@ namespace Kadder
     public class GrpcServiceBuilder
     {
         private IList<string> _messages = new List<string>();
+        private IDictionary<string,string> _oldVersionGrpcMethods = new Dictionary<string, string>();
 
         public ClassDescripter GenerateHandlerProxy(Assembly[] assemblies, CodeBuilder codeBuilder = null)
         {
@@ -136,6 +137,7 @@ namespace Kadder
 
                     @class = GenerateGrpcMethod(@class, method, parameters[0], baseInterfaces);
                     GenerateGrpcCallCode(method, parameters[0], options.NamespaceName, codeBuilder, ref bindServicesCode);
+                    GenerateGrpcCallCodeForOldVersion(method, parameters[0], options.NamespaceName, options.ServiceName, codeBuilder, ref bindServicesCode);
                
                     if (options.IsGeneralProtoFile)
                     {
@@ -229,6 +231,38 @@ namespace Kadder
                     {method.Name.Replace("Async", "")})");
             codeBuilder.AddAssemblyRefence(parameter.ParameterType.Assembly.Location)
                 .AddAssemblyRefence(GetMethodReturn(method.ReturnType).Assembly.Location);
+        }
+
+        /// <summary>
+        /// Support version 0.0.6 before
+        /// </summary>
+        /// <param name="method"></param>
+        /// <param name="parameter"></param>
+        /// <param name="namespaceName"></param>
+        /// <param name="codeBuilder"></param>
+        /// <param name="bindServicesCode"></param>
+        private void GenerateGrpcCallCodeForOldVersion(MethodInfo method, ParameterInfo parameter, string namespaceName, string serviceName, CodeBuilder codeBuilder, ref StringBuilder bindServicesCode)
+        {
+            var name = $"{namespaceName}.{serviceName}";
+            if (_oldVersionGrpcMethods.ContainsKey(name))
+            {
+                return;
+            }
+            bindServicesCode.AppendLine(
+                $@".AddMethod(new Method<{parameter.ParameterType.Name},{GetMethodReturn(method.ReturnType).Name}>(
+                    MethodType.Unary,
+                    ""{name}"",
+                    ""{method.Name.Replace("Async", "")}"",
+                    new Marshaller<{parameter.ParameterType.Name}>(
+                        _binarySerializer.Serialize,
+                        _binarySerializer.Deserialize<{parameter.ParameterType.Name}>
+                    ),
+                    new Marshaller<{GetMethodReturn(method.ReturnType).Name}>(
+                        _binarySerializer.Serialize,
+                        _binarySerializer.Deserialize<{GetMethodReturn(method.ReturnType).Name}>)
+                    ),
+                    {method.Name.Replace("Async", "")})");
+            _oldVersionGrpcMethods.Add(name, name);
         }
 
         private void GenerateProtoCode(MethodInfo method, ParameterInfo parameter, ref StringBuilder protoServiceCode, ref StringBuilder protoMessageCode)
