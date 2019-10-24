@@ -3,9 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Kadder.Middlewares;
-using Microsoft.Extensions.Options;
 using Grpc.Core.Interceptors;
-using System.Linq;
 
 namespace Kadder
 {
@@ -14,11 +12,10 @@ namespace Kadder
         private readonly Server _server;
         private readonly GrpcServerOptions _options;
         private readonly GrpcServerBuilder _builder;
-        private readonly IGrpcServices _grpcServices;
-        public GrpcServer(GrpcServerBuilder builder, IGrpcServices services)
+        
+        public GrpcServer(GrpcServerBuilder builder)
         {
             _builder = builder;
-            _grpcServices = services;
             _options = builder.Options ?? throw new ArgumentNullException("GrpcServerOption cannot be null");
             _server = new Server();
             _server.Ports.Add(new ServerPort(_options.Host, _options.Port, ServerCredentials.Insecure));
@@ -27,9 +24,13 @@ namespace Kadder
         public GrpcServer Start()
         {
             GrpcHandlerDirector.ConfigActor();
-            var definition = _grpcServices.BindServices();
-            definition = ResolveInterceptors(definition);
-            _server.Services.Add(definition);
+            foreach(var grpcServiceType in _builder.Services)
+            {
+                var grpcService = (IGrpcServices)GrpcServerBuilder.ServiceProvider.GetService(grpcServiceType);
+                var definition = grpcService.BindServices();
+                definition = ResolveInterceptors(definition);
+                _server.Services.Add(definition);
+            }
             _server.Start();
             return this;
         }

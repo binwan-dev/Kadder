@@ -52,9 +52,7 @@ namespace Kadder
         }
 
         public virtual async Task<TResponse> CallAsync<TRequest, TResponse>(
-            TRequest request, string methodName)
-            where TRequest : class
-            where TResponse : class
+            TRequest request, string methodName, string serviceName) where TRequest : class where TResponse : class
         {
             if (string.IsNullOrWhiteSpace(methodName))
             {
@@ -62,19 +60,12 @@ namespace Kadder
             }
 
             var serializer = GrpcClientBuilder.ServiceProvider.GetService<IBinarySerializer>();
+            serviceName = $"{_options.NamespaceName}.{serviceName}";
 
-            var requestMarshaller = new Marshaller<TRequest>(
-                serializer.Serialize,
-                serializer.Deserialize<TRequest>);
-            var responseMarshaller = new Marshaller<TResponse>(
-                serializer.Serialize,
-                serializer.Deserialize<TResponse>);
+            var requestMarshaller = new Marshaller<TRequest>(serializer.Serialize, serializer.Deserialize<TRequest>);
+            var responseMarshaller = new Marshaller<TResponse>(serializer.Serialize, serializer.Deserialize<TResponse>);
             var method = new Method<TRequest, TResponse>(
-                MethodType.Unary,
-                $"{_options.NamespaceName}.{_options.ServiceName}",
-                methodName,
-                requestMarshaller,
-                responseMarshaller);
+                MethodType.Unary, serviceName, methodName, requestMarshaller, responseMarshaller);
             
             var invoker = await GetInvokerAsync();
             var result = invoker.AsyncUnaryCall<TRequest, TResponse>(

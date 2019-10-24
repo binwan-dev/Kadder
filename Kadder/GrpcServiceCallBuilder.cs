@@ -10,9 +10,7 @@ namespace Kadder
     public class GrpcServiceCallBuilder
     {   
         public IDictionary<Type, string> GenerateHandler(
-            GrpcOptions options,
-            GrpcClient client,
-            ref CodeBuilder codeBuilder)
+            GrpcOptions options, GrpcClient client, ref CodeBuilder codeBuilder)
         {
             var types = RefelectionHelper.GetImplInterfaceTypes(
                 typeof(IMessagingServicer), true, options.GetScanAssemblies());
@@ -20,10 +18,8 @@ namespace Kadder
 
             foreach (var typeService in types)
             {
-                var className=typeService.Name.Remove(0, 1);
-                var classDescripter = new ClassDescripter(
-                        className,
-                        codeBuilder.Namespace)
+                var className = $"{typeService.Name}GrpcService";
+                var classDescripter = new ClassDescripter(className,codeBuilder.Namespace)
                     .SetBaseType(typeService.Name)
                     .AddUsing("System.Threading.Tasks", typeService.Namespace)
                     .AddUsing("Kadder")
@@ -33,9 +29,8 @@ namespace Kadder
                 var baseInterfaces = typeService.GetInterfaces();
                 foreach (var method in typeService.GetMethods())
                 {
-                    var notGrpcMethodCount = method.CustomAttributes
-                        .Count(p =>
-                            p.AttributeType == typeof(NotGrpcMethodAttribute));
+                    var notGrpcMethodCount = method.CustomAttributes.Count(
+                        p => p.AttributeType == typeof(NotGrpcMethodAttribute));
                     if (notGrpcMethodCount > 0)
                     {
                         continue;
@@ -54,11 +49,9 @@ namespace Kadder
                         new MethodDescripter(method.Name,true)
                         .SetAccess(AccessType.Public)
                         .SetReturn($"Task<{responseType.Name}>")
-                        .SetParams(
-                            new ParameterDescripter(
-                                parameters[0].ParameterType.Name,requestName))
-                        .AppendCode($@"var client=GrpcClientExtension.ClientDic[""{client.ID.ToString()}""];")
-                        .AppendCode($@"return await client.CallAsync<{parameters[0].ParameterType.Name},{responseType.Name}>({requestName}, ""{methodName}"");"))
+                        .SetParams(new ParameterDescripter(parameters[0].ParameterType.Name,requestName))
+                        .AppendCode($@"var client = GrpcClientExtension.ClientDic[""{client.ID.ToString()}""];")
+                        .AppendCode($@"return await client.CallAsync<{parameters[0].ParameterType.Name},{responseType.Name}>({requestName}, ""{methodName}"", ""{typeService.Name}"");"))
                         .AddUsing(responseType.Namespace)
                         .AddUsing(parameters[0].ParameterType.Namespace);
                 }

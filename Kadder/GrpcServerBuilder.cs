@@ -13,6 +13,7 @@ namespace Kadder
         {
             Middlewares = new List<Type>();
             Interceptors = new List<Type>();
+            Services = new List<Type>();
         }
         
         public GrpcServerOptions Options{get;set;}
@@ -24,6 +25,8 @@ namespace Kadder
         internal IList<Type> Middlewares{get;private set;}
 
         internal IList<Type> Interceptors { get; private set; }
+
+        internal IList<Type> Services { get; private set; }
 
         public static IServiceProvider ServiceProvider{get;set;}
 
