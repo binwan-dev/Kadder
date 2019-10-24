@@ -85,6 +85,7 @@ namespace Atlantis.Grpc.Simple.Client
             var servicer = provider.GetService<IPersonMessageServicer>();
             var message = new HelloMessage() { Name = "test interceptor" };
             var resuslt = servicer.HelloAsync(message).Result;
+            resuslt = servicer.HelloAsync(message).Result;
             Console.WriteLine(resuslt.Result);
         }
         

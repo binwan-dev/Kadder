@@ -5,9 +5,12 @@ using System.Threading.Tasks;
 using Atlantis.Common.CodeGeneration;
 using Grpc.Core;
 using Grpc.Core.Interceptors;
+using Grpc.Core.Logging;
 using Kadder.Utilies;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using ILogger = Microsoft.Extensions.Logging.ILogger;
 
 namespace Kadder
 {
@@ -20,8 +23,13 @@ namespace Kadder
         private readonly GrpcClientBuilder _clientBuilder;
         private readonly GrpcClientMetadata _metadata;
         private Channel _channel;
+        private readonly IDictionary<string, string> _oldMethodDic;
+        private readonly Lazy<ILogger<GrpcClient>> _log;
 
-        public GrpcClient(GrpcClientMetadata metadata, GrpcClientBuilder builder, GrpcServiceCallBuilder serviceCallBuilder)
+        public GrpcClient(
+            GrpcClientMetadata metadata,
+            GrpcClientBuilder builder,
+            GrpcServiceCallBuilder serviceCallBuilder)
         {
             _clientBuilder = builder;
             _metadata = metadata;
@@ -29,8 +37,10 @@ namespace Kadder
 
             ID = Guid.NewGuid();
             GrpcServiceDic = new Dictionary<Type, Type>();
+            _oldMethodDic = new Dictionary<string, string>();
             var namespaces = $"Kadder.Client.Services";
             _codeBuilder = new CodeBuilder(namespaces, namespaces);
+            _log = new Lazy<ILogger<GrpcClient>>(()=>GrpcClientBuilder.ServiceProvider.GetService<ILogger<GrpcClient>>());
 
             var grpcServiceDic = serviceCallBuilder.GenerateHandler(_options, this, ref _codeBuilder);
             _codeAssembly = _codeBuilder.BuildAsync().Result;
@@ -54,6 +64,51 @@ namespace Kadder
         public virtual async Task<TResponse> CallAsync<TRequest, TResponse>(
             TRequest request, string methodName, string serviceName) where TRequest : class where TResponse : class
         {
+            var name = $"{serviceName}{methodName}";
+            try
+            {
+                if (_oldMethodDic.ContainsKey(name))
+                {
+                    _log.Value.LogWarning($"ServiceCall has call old version. Name[{name}]");
+                    return await CallForOldVersionAsync<TRequest, TResponse>(request, methodName);
+                }
+                else
+                {
+                    return await DoCallAsync<TRequest, TResponse>(request, methodName, serviceName);
+                }
+            }
+            catch (Exception ex)
+            {
+                var rpcException = (RpcException)ex.InnerException;
+                if (rpcException.Status.StatusCode != StatusCode.Unimplemented)
+                {
+                    throw ex;
+                }
+                
+                _log.Value.LogWarning($"ServiceCall has call old version. Name[{name}]");
+                var result = await CallForOldVersionAsync<TRequest, TResponse>(request, methodName);
+                _oldMethodDic.Add(name, name);
+                return result;
+            }
+        }
+
+        /// <summary>
+        /// Support old version 0.0.6 and before version
+        /// </summary>
+        /// <param name="request"></param>
+        /// <param name="methodName"></param>
+        /// <typeparam name="TRequest"></typeparam>
+        /// <typeparam name="TResponse"></typeparam>
+        /// <returns></returns>
+        public virtual Task<TResponse> CallForOldVersionAsync<TRequest, TResponse>(
+            TRequest request, string methodName) where TRequest : class where TResponse : class
+        {
+            return DoCallAsync<TRequest,TResponse>(request, methodName, _options.ServiceName);
+        }
+
+        protected virtual async Task<TResponse> DoCallAsync<TRequest, TResponse>(
+            TRequest request, string methodName, string serviceName) where TRequest : class where TResponse : class
+        {
             if (string.IsNullOrWhiteSpace(methodName))
             {
                 throw new RpcException(new Status(StatusCode.Unknown, "No target!"));
@@ -64,9 +119,10 @@ namespace Kadder
 
             var requestMarshaller = new Marshaller<TRequest>(serializer.Serialize, serializer.Deserialize<TRequest>);
             var responseMarshaller = new Marshaller<TResponse>(serializer.Serialize, serializer.Deserialize<TResponse>);
+            
             var method = new Method<TRequest, TResponse>(
                 MethodType.Unary, serviceName, methodName, requestMarshaller, responseMarshaller);
-            
+
             var invoker = await GetInvokerAsync();
             var result = invoker.AsyncUnaryCall<TRequest, TResponse>(
                 method, $"{_options.Host}:{_options.Port}", new CallOptions(), request);
