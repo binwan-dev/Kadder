@@ -1,12 +1,9 @@
 using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using Atlantis.Common.CodeGeneration;
-using Grpc.Core.Interceptors;
 using Kadder.Middlewares;
 using Kadder.Utilies;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
 
 namespace Kadder
 {
@@ -51,8 +48,7 @@ namespace Kadder
         }
 
         public static IServiceCollection AddKadderGrpcServer(
-            this IServiceCollection services,
-            Action<GrpcServerBuilder> builderAction)
+            this IServiceCollection services, Action<GrpcServerBuilder> builderAction)
         {
             var builder = new GrpcServerBuilder();
             builderAction(builder);
@@ -76,21 +72,22 @@ namespace Kadder
             //var serviceBuilder = provider.GetService<GrpcServiceBuilder>();
 
             var namespaces = "Kadder.CodeGeneration";
-            var codeBuilder = new CodeBuilder(namespaces, namespaces);
-            var grpcCode = serviceBuilder.GenerateGrpcProxy(
-                builder.Options, codeBuilder);
-            var proxyCode = serviceBuilder.GenerateHandlerProxy(
-                builder.Options.GetScanAssemblies(), codeBuilder);
+            var codeBuilder = new CodeBuilder(namespaces, namespaces); 
+            var grpcClasses = serviceBuilder.GenerateGrpcProxy(builder.Options, codeBuilder); 
+            var proxyCode = serviceBuilder.GenerateHandlerProxy(builder.Options.GetScanAssemblies(), codeBuilder);
             var codeAssembly = codeBuilder.BuildAsync().Result;
 
             namespaces = $"{proxyCode.Namespace}.{proxyCode.Name}";
-            var proxy = (IMessageServicerProxy)codeAssembly.Assembly
-                .CreateInstance(namespaces);
+            var proxy = (IMessageServicerProxy)codeAssembly.Assembly.CreateInstance(namespaces);
             services.AddSingleton<IMessageServicerProxy>(proxy);
 
-            namespaces = $"{grpcCode.Namespace}.{grpcCode.Name}";
-            var grpcType = codeAssembly.Assembly.GetType(namespaces);
-            services.AddSingleton(typeof(IGrpcServices), grpcType);
+            foreach(var grpcClass in grpcClasses)
+            {
+                namespaces = $"{grpcClass.Namespace}.{grpcClass.Name}";
+                var grpcType = codeAssembly.Assembly.GetType(namespaces);
+                services.AddSingleton(grpcType);
+                builder.Services.Add(grpcType);
+            }
             services.AddSingleton<GrpcServer>();
 
             return services;

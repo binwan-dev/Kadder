@@ -32,6 +32,7 @@ namespace Kadder.Simple.Server
                 builder.AddInterceptor<LoggerInterceptor>();
             });
             services.AddScoped<IPersonMessageServicer, PersonMessageServicer>();
+            services.AddScoped<IAnimalMessageServicer, AnimalMessageServicer>();
 
             var provider = services.BuildServiceProvider();
             provider.StartKadderGrpc();
