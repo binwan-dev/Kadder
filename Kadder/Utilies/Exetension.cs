@@ -6,6 +6,33 @@ namespace Kadder.Utilies
 {
     public static class Exetension
     {
+        public static bool EatException<ConvertException>(this Exception ex, out ConvertException outEx)
+            where ConvertException : Exception
+        {
+            var ensureException = ex;
+            while (true)
+            {
+                if (ensureException == null)
+                {
+                    break;
+                }
+                if (ensureException is ConvertException)
+                {
+                    break;
+                }
+                ensureException = ensureException.InnerException;
+            }
+            if (ensureException is ConvertException)
+            {
+                outEx = ensureException;
+                return true;
+            }
+            else
+            {
+                outEx = null;
+                return false;
+            }
+        }
         
         /// <summary>
         /// Timestamp to datetime

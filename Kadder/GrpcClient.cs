@@ -27,9 +27,7 @@ namespace Kadder
         private readonly Lazy<ILogger<GrpcClient>> _log;
 
         public GrpcClient(
-            GrpcClientMetadata metadata,
-            GrpcClientBuilder builder,
-            GrpcServiceCallBuilder serviceCallBuilder)
+            GrpcClientMetadata metadata, GrpcClientBuilder builder, GrpcServiceCallBuilder serviceCallBuilder)
         {
             _clientBuilder = builder;
             _metadata = metadata;
@@ -79,8 +77,8 @@ namespace Kadder
             }
             catch (Exception ex)
             {
-                var rpcException = (RpcException)ex.InnerException;
-                if (rpcException.Status.StatusCode != StatusCode.Unimplemented)
+                if (ex.EatException(out RpcException rpcException) &&
+                    rpcException.Status.StatusCode != StatusCode.Unimplemented)
                 {
                     throw ex;
                 }
