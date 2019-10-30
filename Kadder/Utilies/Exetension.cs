@@ -6,8 +6,8 @@ namespace Kadder.Utilies
 {
     public static class Exetension
     {
-        public static bool EatException<ConvertException>(this Exception ex, out ConvertException outEx)
-            where ConvertException : Exception
+        public static bool EatException<EatException>(this Exception ex, out EatException outEx)
+            where EatException : Exception
         {
             var ensureException = ex;
             while (true)
@@ -16,15 +16,15 @@ namespace Kadder.Utilies
                 {
                     break;
                 }
-                if (ensureException is ConvertException)
+                if (ensureException is EatException)
                 {
                     break;
                 }
                 ensureException = ensureException.InnerException;
             }
-            if (ensureException is ConvertException)
+            if (ensureException is EatException)
             {
-                outEx = ensureException;
+                outEx = (EatException)ensureException;
                 return true;
             }
             else
