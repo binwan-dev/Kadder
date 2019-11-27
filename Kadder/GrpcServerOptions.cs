@@ -1,14 +1,14 @@
 namespace Kadder
 {
-    public class GrpcServerOptions:GrpcOptions
+    public class GrpcServerOptions : GrpcOptions
     {
         public GrpcServerOptions()
         {
-            IsGeneralProtoFile=true;
+            IsGeneralProtoFile = true;
         }
 
-        public string PackageName{get;set;}
-        
-        public bool IsGeneralProtoFile{get;set;}
+        public string PackageName { get; set; }
+
+        public bool IsGeneralProtoFile { get; set; }
     }
 }

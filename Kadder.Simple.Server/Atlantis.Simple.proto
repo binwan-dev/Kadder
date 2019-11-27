@@ -9,7 +9,7 @@ rpc Hello(HelloMessage) returns(HelloMessageResult);
 service IPersonMessageServicer {
 
 
-rpc Hello(HelloMessage) returns(HelloMessageResult);
+rpc Hello(HelloMessage) returns(EmptyMessageResult);
 
 }
 
@@ -20,6 +20,10 @@ message HelloMessage {
 
 message HelloMessageResult {
 	string Result = 1;
+}
+
+
+message EmptyMessageResult {
 }
 
 

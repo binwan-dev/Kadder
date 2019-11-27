@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Threading.Tasks;
 using Kadder;
 using Kadder.Simple.Client;
+using Kadder.Simple.Server;
 using Kadder.Utilies;
 using Microsoft.Extensions.DependencyInjection;
 using ProtoBuf;
@@ -30,7 +31,7 @@ namespace Atlantis.Grpc.Simple.Client
             services.AddKadderGrpcClient(builder=>
             {
                 builder.RegClient(options);
-                builder.RegShareInterceptor<LoggerInterceptor>();
+                builder.RegShareInterceptor<Kadder.Simple.Client.LoggerInterceptor>();
             });
 
             var provider = services.BuildServiceProvider();
@@ -64,12 +65,12 @@ namespace Atlantis.Grpc.Simple.Client
                 var servicer = provider.GetService<IPersonMessageServicer>();
                 var message = new HelloMessage() { Name = "DotNet" };
                 var stopwatch = new Stopwatch();
-                var resuslt = servicer.HelloAsync(message).Result;
+                var resuslt = servicer.HelloAsync(message);
                 stopwatch.Start();
                 System.Threading.Tasks.Parallel.For(0, 10000, i =>
                 {
-                    var result = servicer.HelloAsync(message).Result;
-                    Console.WriteLine(result.Result);
+                    var result = servicer.HelloAsync(message);
+                    Console.WriteLine(result);
                 });
                 stopwatch.Stop();
                 Console.WriteLine(stopwatch.ElapsedMilliseconds);
@@ -84,38 +85,9 @@ namespace Atlantis.Grpc.Simple.Client
         {
             var servicer = provider.GetService<IPersonMessageServicer>();
             var message = new HelloMessage() { Name = "test interceptor" };
-            var resuslt = servicer.HelloAsync(message).Result;
-            Console.WriteLine(resuslt.Result);
+            var resuslt = servicer.HelloAsync(message);
+
         }
         
-    }
-
-    public interface IPersonMessageServicer:IMessagingServicer
-    {
-        Task<HelloMessageResult> HelloAsync(HelloMessage message);
-    }
-
-    public class PersonMessageServicer : IPersonMessageServicer
-    {
-        public Task<HelloMessageResult> HelloAsync(HelloMessage message)
-        {
-            var result = $"Hello, {message.Name}";
-            return Task.FromResult(new HelloMessageResult()
-            {
-                Result = result
-            });
-        }
-    }
-
-    [ProtoContract(ImplicitFields=ImplicitFields.AllPublic)]
-    public class HelloMessage : BaseMessage
-    {
-        public string Name { get; set; }
-    }
-
-    [ProtoContract(ImplicitFields=ImplicitFields.AllPublic)]
-    public class HelloMessageResult : MessageResult
-    {
-        public string Result { get; set; }
     }
 }

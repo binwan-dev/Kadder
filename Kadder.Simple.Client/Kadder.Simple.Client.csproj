@@ -7,6 +7,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Kadder\Kadder.csproj" />
+    <ProjectReference Include="..\Kadder.Simple.Server\Kadder.Simple.Server.csproj" />	
   </ItemGroup>
 
   <ItemGroup>

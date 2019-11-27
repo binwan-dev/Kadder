@@ -6,18 +6,15 @@ namespace Kadder.Simple.Server
 {
     public interface IPersonMessageServicer:IMessagingServicer
     {
-        Task<HelloMessageResult> HelloAsync(HelloMessage message);
+        Task HelloAsync(HelloMessage message);
     }
 
     public class PersonMessageServicer : IPersonMessageServicer
     {
-        public Task<HelloMessageResult> HelloAsync(HelloMessage message)
+        public Task HelloAsync(HelloMessage message)
         {
             var result = $"Hello, {message.Name}";
-            return Task.FromResult(new HelloMessageResult()
-            {
-                Result = result
-            });
+            return Task.CompletedTask;
         }
     }
 
