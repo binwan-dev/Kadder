@@ -3,7 +3,7 @@ using Kadder.Utilies;
 
 namespace Kadder.Simple.Server
 {
-    public interface IAnimalMessageServicer : IMessagingServicer
+    public interface IAnimalMessageServicer 
     {
         Task<HelloMessageResult> HelloAsync(HelloMessage message);
     }

@@ -65,18 +65,19 @@ namespace Kadder
                     }
                 }
                 bindServicesCode.AppendLine(".Build();");
+                protoMessageCode.AppendLine("}");
                 @class.CreateMember(new MethodDescripter("BindServices", false).SetCode(bindServicesCode.ToString()).SetReturn("ServerServiceDefinition").SetAccess(AccessType.Public));
                 codeBuilder.AddAssemblyRefence(Assembly.GetExecutingAssembly().Location)
                     .AddAssemblyRefence(typeof(ServerServiceDefinition).Assembly.Location)
                     .AddAssemblyRefence(typeof(ServerServiceDefinition).Assembly.Location)
                     .AddAssemblyRefence(typeof(ServiceProviderServiceExtensions).Assembly.Location)
-                    .AddAssemblyRefence(typeof(Console).Assembly.Location);
+                    .AddAssemblyRefence(typeof(Console).Assembly.Location)
+                    .AddAssemblyRefence(service.Assembly.Location);
                 codeBuilder.CreateClass(@class);
                 classDescripterList.Add(@class);
             }
             if (options.IsGeneralProtoFile)
             {
-                protoServiceCode.Append("\n}\n");
                 var stringBuilder = new StringBuilder();
                 stringBuilder.AppendLine("syntax = \"proto3\";");
                 stringBuilder.AppendLine($@"option csharp_namespace = ""{options.NamespaceName}"";");

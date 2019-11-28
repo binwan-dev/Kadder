@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Threading.Tasks;
+using Fnlinker.AIService.Protocol.Entities.Ocr;
+using Fnlinker.AIService.Protocol.Services;
 using Kadder;
 using Kadder.Simple.Client;
 using Kadder.Simple.Server;
@@ -58,6 +60,16 @@ namespace Atlantis.Grpc.Simple.Client
             // }
         }
 
+        // static void TestAI(ServiceProvider provider)
+        // {
+        //     var service = provider.GetService<IOcrService>();
+        //     var request = new ImageUrlOcrRequest()
+        //     {
+        //         Url = "https://resapi.neobai.com/previews/1195351096063823872.jpg"
+        //     };
+        //     var response = service.GetImageTagsByUrlAsync(request);
+        // }
+
         static void TestParallel(ServiceProvider provider)
         {
             try
@@ -65,11 +77,11 @@ namespace Atlantis.Grpc.Simple.Client
                 var servicer = provider.GetService<IPersonMessageServicer>();
                 var message = new HelloMessage() { Name = "DotNet" };
                 var stopwatch = new Stopwatch();
-                var resuslt = servicer.HelloAsync(message);
+                var resuslt = servicer.HelloAsync();
                 stopwatch.Start();
                 System.Threading.Tasks.Parallel.For(0, 10000, i =>
                 {
-                    var result = servicer.HelloAsync(message);
+                    var result = servicer.HelloAsync();
                     Console.WriteLine(result);
                 });
                 stopwatch.Stop();
@@ -85,8 +97,8 @@ namespace Atlantis.Grpc.Simple.Client
         {
             var servicer = provider.GetService<IPersonMessageServicer>();
             var message = new HelloMessage() { Name = "test interceptor" };
-            var resuslt = servicer.HelloAsync(message);
-            resuslt = servicer.HelloAsync(message);
+            var resuslt = servicer.HelloAsync();
+            resuslt = servicer.HelloAsync();
             // Console.WriteLine(resuslt.Result);
         }
         
