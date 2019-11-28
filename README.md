@@ -28,18 +28,6 @@ Kadder
    Server:   
 
 ```csharp  
-using System;
-using System.Reflection;
-using Atlantis.Grpc.Utilies;
-
-namespace Atlantis.Grpc.Simple.Server
-{
-    class Program
-    {
-        static void Main(string[] args)
-        {
-            Console.WriteLine(Environment.CurrentDirectory);
-            
             var services=new ServiceCollection();
             services.AddLogging();
             services.AddKadderGrpcServer(builder =>
@@ -50,11 +38,6 @@ namespace Atlantis.Grpc.Simple.Server
             
             var provider=services.BuildServiceProvider();
             provider.StartKadderGrpc();
-
-            Console.WriteLine("Server is running...");
-            Console.ReadLine();
-        }
-    }
     
     public interface IPersonMessageServicer:IMessagingServicer
     {
@@ -68,24 +51,10 @@ namespace Atlantis.Grpc.Simple.Server
             ...
         }
     }
-}
 ```
     Client:
 ```csharp
-using System;
-using System.Reflection;
-using Atlantis.Grpc.Simple.Server;
-using Atlantis.Grpc.Utilies;
-// using Atlantis.Simple;
-using Grpc.Core;
-// using static Atlantis.Simple.AtlantisService;
 
-namespace Atlantis.Grpc.Simple.Client
-{
-    class Program
-    {
-        static void Main(string[] args)
-        {
            var options=new GrpcOptions();
 
             IServiceCollection services=new ServiceCollection();
@@ -103,7 +72,5 @@ namespace Atlantis.Grpc.Simple.Client
             var result=servicer.HelloAsync(message).Result;
             Console.WriteLine(result.Result);
         }
-    }
-}
 ```
 
