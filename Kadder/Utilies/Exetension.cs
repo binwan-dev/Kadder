@@ -6,27 +6,32 @@ namespace Kadder.Utilies
 {
     public static class Exetension
     {
-        public static bool EatException<EatException>(this Exception ex, out EatException outEx) where EatException : Exception
+        public static bool EatException<EatException>(this Exception ex, out EatException outEx)
+            where EatException : Exception
         {
-            Exception exception = ex;
+            var ensureException = ex;
             while (true)
             {
-                if (exception != null && !(exception is EatException))
-                {
-                    exception = exception.InnerException;
-                }
-                else
+                if (ensureException == null)
                 {
                     break;
                 }
+                if (ensureException is EatException)
+                {
+                    break;
+                }
+                ensureException = ensureException.InnerException;
             }
-            if (exception is EatException)
+            if (ensureException is EatException)
             {
-                outEx = (EatException)exception;
+                outEx = (EatException)ensureException;
                 return true;
             }
-            outEx = default(EatException);
-            return false;
+            else
+            {
+                outEx = null;
+                return false;
+            }
         }
         
         /// <summary>

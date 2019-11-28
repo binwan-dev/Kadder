@@ -20,80 +20,7 @@ namespace Kadder
     {
         private List<string> _messages = new List<string>();
         private Dictionary<string, string> _oldVersionGrpcMethods = new Dictionary<string, string>();
-
-        // public ClassDescripter GenerateHandlerProxy(Assembly[] assemblies, CodeBuilder codeBuilder = null)
-        // {
-        //     if (codeBuilder == null)
-        //     {
-        //         codeBuilder = CodeBuilder.Default;
-        //     }
-        //     var implInterfaceTypes = RefelectionHelper.GetImplInterfaceTypes(typeof(IMessagingServicer), true, assemblies);
-        //     var classDescripter = new ClassDescripter("MessageServicerProxy", "Kadder")
-        //         .SetAccess(AccessType.Public)
-        //         .SetBaseType("IMessageServicerProxy")
-        //         .AddUsing("using System;", "using Kadder.Utilies;", "using System.Threading.Tasks;", "using Microsoft.Extensions.DependencyInjection;");
-        //     var needResult = new StringBuilder();
-        //     var noResult = new StringBuilder();
-        //     foreach (var type in implInterfaceTypes)
-        //     {
-        //         foreach (var method in type.GetMethods())
-        //         {
-        //             var parameters = method.GetParameters();
-        //             if (parameters.Length == 1)
-        //             {
-        //                 var requestName = GrpcServiceBuilder.GetRequestName(method);
-        //                 if (method.ReturnType == typeof(void))
-        //                 {
-        //                     noResult.AppendLine(
-        //                         $@"if(string.Equals(message.GetTypeFullName(), ""{requestName}""))
-        //                        {{
-        //                            return async (m)=>await serviceProvider.GetService<{type.Name}>().{method.Name}(message as {parameters[0].ParameterType.FullName});
-        //                        }}");
-        //                 }
-        //                 else
-        //                 {
-        //                     needResult.AppendLine(
-        //                         $@"if(string.Equals(message.GetTypeFullName(),""{requestName}""))
-        //                        {{
-        //                            return async (m)=>(await serviceProvider.GetService<{type.Name}>().{method.Name}(message as {parameters[0].ParameterType.FullName})) as TMessageResult;
-        //                        }}");
-        //                 }
-        //                 codeBuilder.AddAssemblyRefence(parameters[0].ParameterType.Assembly.Location);
-        //             }
-        //         }
-        //         classDescripter.AddUsing("using " + type.Namespace + ";");
-        //         codeBuilder.AddAssemblyRefence(type.Assembly.Location);
-        //     }
-        //     noResult.Append("return null;");
-        //     needResult.Append("return null;");
-        //     classDescripter.CreateMember(
-        //         new MethodDescripter("GetHandleDelegate<TMessage,TMessageResult>", false)
-        //         .SetAccess(AccessType.Public)
-        //         .SetReturn("Func<TMessage,Task<TMessageResult>>")
-        //         .SetCode(needResult.ToString())
-        //         .SetParams(
-        //             new ParameterDescripter("TMessage", "message"),
-        //             new ParameterDescripter("IServiceProvider", "serviceProvider"))
-        //         .SetTypeParameters(
-        //             new TypeParameterDescripter("TMessageResult", "class"),
-        //             new TypeParameterDescripter("TMessage", "BaseMessage")),
-        //         new MethodDescripter("GetHandleDelegate<TMessage>", false)
-        //         .SetAccess(AccessType.Public)
-        //         .SetReturn("Func<TMessage,Task>")
-        //         .SetCode(noResult.ToString())
-        //         .SetParams(
-        //             new ParameterDescripter("TMessage", "message"),
-        //             new ParameterDescripter("IServiceProvider", "serviceProvider"))
-        //         .SetTypeParameters(new TypeParameterDescripter("TMessage", "BaseMessage")));
-
-        //     codeBuilder
-        //         .AddAssemblyRefence(assemblies.Select(p => p.Location).ToArray())
-        //         .AddAssemblyRefence(Assembly.GetExecutingAssembly().Location)
-        //         .AddAssemblyRefence(typeof(ServiceProviderServiceExtensions).Assembly.Location)
-        //         .CreateClass(classDescripter);
-        //     return classDescripter;
-        // }
-
+        
         public List<ClassDescripter> GenerateGrpcProxy(GrpcServerOptions options, CodeBuilder codeBuilder = null)
         {
             if (codeBuilder == null)
@@ -261,6 +188,14 @@ System.Console.WriteLine(""ddd"");
                 .AddAssemblyRefence(GrpcServiceBuilder.GetMethodReturn(method).Assembly.Location);
         }
 
+        /// <summary>
+        /// Support version 0.0.6 before
+        /// </summary>
+        /// <param name="method"></param>
+        /// <param name="parameter"></param>
+        /// <param name="namespaceName"></param>
+        /// <param name="codeBuilder"></param>
+        /// <param name="bindServicesCode"></param>
         private void GenerateGrpcCallCodeForOldVersion(MethodInfo method, RpcParameterInfo parameter, string namespaceName,
             string serviceName, CodeBuilder codeBuilder, ref StringBuilder bindServicesCode)
         {
@@ -286,8 +221,7 @@ System.Console.WriteLine(""ddd"");
             _oldVersionGrpcMethods.Add(key, key);
         }
 
-        private void GenerateProtoCode(MethodInfo method, RpcParameterInfo parameter, ref StringBuilder protoServiceCode,
-            ref StringBuilder protoMessageCode)
+       private void GenerateProtoCode(MethodInfo method, RpcParameterInfo parameter, ref StringBuilder protoServiceCode, ref StringBuilder protoMessageCode)
         {
             var str = $"rpc {method.Name.Replace("Async", "")}({parameter.ParameterType.Name}) returns({GrpcServiceBuilder.GetMethodReturn(method).Name});";
             protoServiceCode.AppendLine();

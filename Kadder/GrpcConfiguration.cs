@@ -100,9 +100,7 @@ namespace Kadder
             return provider;
         }
 
-        private static void RegSerializer(
-            this IServiceCollection services,
-            IJsonSerializer jsonSerializer,
+        private static void RegSerializer(this IServiceCollection services, IJsonSerializer jsonSerializer,
             IBinarySerializer binarySerializer)
         {
             if (jsonSerializer == null)
