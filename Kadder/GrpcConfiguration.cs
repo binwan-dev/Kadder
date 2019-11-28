@@ -67,20 +67,12 @@ namespace Kadder
                 services.AddSingleton(interceptor);
             }
 
-            //var provider = services.BuildServiceProvider();
-            //GrpcServerBuilder.ServiceProvider = provider;
-            //var serviceBuilder = provider.GetService<GrpcServiceBuilder>();
-
             var namespaces = "Kadder.CodeGeneration";
             var codeBuilder = new CodeBuilder(namespaces, namespaces); 
             var grpcClasses = serviceBuilder.GenerateGrpcProxy(builder.Options, codeBuilder); 
-            var proxyCode = serviceBuilder.GenerateHandlerProxy(builder.Options.GetScanAssemblies(), codeBuilder);
+            // var proxyCode = serviceBuilder.GenerateHandlerProxy(builder.Options.GetScanAssemblies(), codeBuilder);
             var codeAssembly = codeBuilder.BuildAsync().Result;
-
-            namespaces = $"{proxyCode.Namespace}.{proxyCode.Name}";
-            var proxy = (IMessageServicerProxy)codeAssembly.Assembly.CreateInstance(namespaces);
-            services.AddSingleton<IMessageServicerProxy>(proxy);
-
+           
             foreach(var grpcClass in grpcClasses)
             {
                 namespaces = $"{grpcClass.Namespace}.{grpcClass.Name}";
@@ -108,9 +100,7 @@ namespace Kadder
             return provider;
         }
 
-        private static void RegSerializer(
-            this IServiceCollection services,
-            IJsonSerializer jsonSerializer,
+        private static void RegSerializer(this IServiceCollection services, IJsonSerializer jsonSerializer,
             IBinarySerializer binarySerializer)
         {
             if (jsonSerializer == null)

@@ -2,24 +2,17 @@ syntax = "proto3";
 option csharp_namespace = "Atlantis.Simple";
 package ;
 
-service IAnimalMessageServicer {
-
-
-rpc Hello(HelloMessage) returns(HelloMessageResult);
 service IPersonMessageServicer {
 
 
-rpc Hello(HelloMessage) returns(HelloMessageResult);
+rpc Hello(EmptyMessage) returns(EmptyMessageResult);
 
-}
-
-message HelloMessage {
-	string Name = 1;
+message EmptyMessage {
 }
 
 
-message HelloMessageResult {
-	string Result = 1;
+message EmptyMessageResult {
 }
 
 
+}

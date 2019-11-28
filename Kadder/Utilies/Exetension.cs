@@ -6,6 +6,33 @@ namespace Kadder.Utilies
 {
     public static class Exetension
     {
+        public static bool EatException<EatException>(this Exception ex, out EatException outEx)
+            where EatException : Exception
+        {
+            var ensureException = ex;
+            while (true)
+            {
+                if (ensureException == null)
+                {
+                    break;
+                }
+                if (ensureException is EatException)
+                {
+                    break;
+                }
+                ensureException = ensureException.InnerException;
+            }
+            if (ensureException is EatException)
+            {
+                outEx = (EatException)ensureException;
+                return true;
+            }
+            else
+            {
+                outEx = null;
+                return false;
+            }
+        }
         
         /// <summary>
         /// Timestamp to datetime
@@ -13,18 +40,18 @@ namespace Kadder.Utilies
         /// <param name="timestamp">source timestamp</param>
         /// <param name="type">target datetime type</param>
         /// <returns></returns>
-        public static DateTime ToTime(this long timestamp,TimeType type=TimeType.Beijing)
+        public static DateTime ToTime(this long timestamp, TimeType type = TimeType.Beijing)
         {
-            DateTime dtStart ;
-            switch(type)
+            DateTime dtStart;
+            switch (type)
             {
-                case TimeType.Beijing:dtStart=DateTime.Parse("1970/01/01 08:00:00");break;
-                default:dtStart=DateTime.Parse("1970/01/01 00:00:00");break;
+                case TimeType.Beijing: dtStart = DateTime.Parse("1970/01/01 08:00:00"); break;
+                default: dtStart = DateTime.Parse("1970/01/01 00:00:00"); break;
             }
             return dtStart.AddSeconds(timestamp);
         }
 
-        public static string CheckTime(this string dateTimeStr,DateTime? defaultTime=null,string format="yyyy/MM/dd HH:mm:ss")
+        public static string CheckTime(this string dateTimeStr, DateTime? defaultTime = null, string format = "yyyy/MM/dd HH:mm:ss")
         {
             DateTime dateTime;
             if (!DateTime.TryParse(dateTimeStr, out dateTime))
@@ -38,7 +65,7 @@ namespace Kadder.Utilies
         {
             return DateTime.Parse("2999/01/01 00:00:00");
         }
-        
+
         public static string ToSqlInWithInt(this IList<int> values)
         {
             if (values == null || values.Count == 0) return string.Empty;
@@ -47,16 +74,16 @@ namespace Kadder.Utilies
             return strValues.Remove(strValues.Length - 1);
         }
 
-        public static DateTime GetWeekTargetDay(this DateTime time,DayOfWeek targetDayOfWeek)
+        public static DateTime GetWeekTargetDay(this DateTime time, DayOfWeek targetDayOfWeek)
         {
-            int targetDayOfWeekInt = targetDayOfWeek == DayOfWeek.Sunday ? 7 : (int)targetDayOfWeek ;
-            int currentDayOfWeekInt=time.DayOfWeek == DayOfWeek.Sunday ? 7 : (int)time.DayOfWeek;
+            int targetDayOfWeekInt = targetDayOfWeek == DayOfWeek.Sunday ? 7 : (int)targetDayOfWeek;
+            int currentDayOfWeekInt = time.DayOfWeek == DayOfWeek.Sunday ? 7 : (int)time.DayOfWeek;
             return time.AddDays(-(currentDayOfWeekInt - targetDayOfWeekInt));
         }
 
-        public static int ToInt(this string str,int defaultValue=0)
+        public static int ToInt(this string str, int defaultValue = 0)
         {
-            int value=defaultValue;
+            int value = defaultValue;
             if (!int.TryParse(str, out value)) return defaultValue;
             return value;
         }
@@ -67,24 +94,24 @@ namespace Kadder.Utilies
         /// <param name="dateTimeStr">source time (like this: yyyy/MM/dd HH:mm:ss)</param>
         /// <param name="type">source time type</param>
         /// <returns></returns>
-        public static long ToTimestamp(this string dateTimeStr,TimeType type=TimeType.Beijing)
+        public static long ToTimestamp(this string dateTimeStr, TimeType type = TimeType.Beijing)
         {
             DateTime dateTime;
             if (!DateTime.TryParse(dateTimeStr, out dateTime)) return 0;
-            DateTime dtStart ;
-            switch(type)
+            DateTime dtStart;
+            switch (type)
             {
-                case TimeType.Beijing:dtStart= DateTime.Parse("1970/01/01 08:00:00");break;
-                default:dtStart= DateTime.Parse("1970/01/01 00:00:00");break;
+                case TimeType.Beijing: dtStart = DateTime.Parse("1970/01/01 08:00:00"); break;
+                default: dtStart = DateTime.Parse("1970/01/01 00:00:00"); break;
             }
-            return (long)(dateTime-dtStart).TotalSeconds;
+            return (long)(dateTime - dtStart).TotalSeconds;
         }
 
         public static string GetExceptionMessage(this Exception exception)
         {
             StringBuilder error = new StringBuilder(exception.Message);
-            var trim="  ";
-            while(true)
+            var trim = "  ";
+            while (true)
             {
                 if (exception.InnerException != null)
                 {
@@ -103,35 +130,35 @@ namespace Kadder.Utilies
 
         public static string GetCloseTrace(this Exception exception)
         {
-            var traces=exception.StackTrace.Split('\n');
-            if(traces==null||traces.Length==0)return exception.StackTrace;
+            var traces = exception.StackTrace.Split('\n');
+            if (traces == null || traces.Length == 0) return exception.StackTrace;
             return traces[0];
         }
 
-        public static IList<int> ToList(this string str,char split)
+        public static IList<int> ToList(this string str, char split)
         {
             if (string.IsNullOrWhiteSpace(str)) return new List<int>();
             var ids = new List<int>();
-            foreach(var item in str.Split(split))
+            foreach (var item in str.Split(split))
             {
                 ids.Add(item.ToInt(0));
             }
             return ids;
         }
 
-        public static DateTime ToDateTime(this string dateTimeStr,DateTime? defaultTime=null)
+        public static DateTime ToDateTime(this string dateTimeStr, DateTime? defaultTime = null)
         {
             DateTime dateTime;
-            if(!DateTime.TryParse(dateTimeStr,out dateTime))
+            if (!DateTime.TryParse(dateTimeStr, out dateTime))
             {
-                dateTime = defaultTime.HasValue ? defaultTime.Value:DateTime.MinValue;
+                dateTime = defaultTime.HasValue ? defaultTime.Value : DateTime.MinValue;
             }
             return dateTime;
         }
-        
-        public static string ToValOrDefault(this string value,string defaultValue)
+
+        public static string ToValOrDefault(this string value, string defaultValue)
         {
-            if(string.IsNullOrWhiteSpace(value))return defaultValue;
+            if (string.IsNullOrWhiteSpace(value)) return defaultValue;
             else return value;
         }
 
@@ -140,22 +167,22 @@ namespace Kadder.Utilies
             return time.ToString("yyyy/MM/dd HH:mm:ss");
         }
 
-        public static string ToStr(this IList<string> values,string split=",")
+        public static string ToStr(this IList<string> values, string split = ",")
         {
-            if(values==null||values.Count==0)return string.Empty;
+            if (values == null || values.Count == 0) return string.Empty;
 
-            var strValue=new StringBuilder();
-            foreach(var str in values)
+            var strValue = new StringBuilder();
+            foreach (var str in values)
             {
                 strValue.Append(str);
                 strValue.Append(",");
             }
-            return strValue.ToString().Remove(strValue.Length-1);
+            return strValue.ToString().Remove(strValue.Length - 1);
         }
     }
 
     public enum TimeType
     {
-        Beijing=1
+        Beijing = 1
     }
 }

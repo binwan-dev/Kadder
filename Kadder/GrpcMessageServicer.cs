@@ -4,6 +4,8 @@ using System.Threading.Tasks;
 using Kadder.Middlewares;
 using Microsoft.Extensions.Logging;
 using Kadder.Utilies;
+using Kadder.Messaging;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Kadder
 {
@@ -13,40 +15,27 @@ namespace Kadder
         private readonly ILogger<GrpcMessageServicer> _log;
         private readonly IJsonSerializer _jsonSerializer;
 
-        public GrpcMessageServicer(
-            ILogger<GrpcMessageServicer> log,
-            GrpcHandlerBuilder builder,
-            IJsonSerializer jsonSerializer)
+        public GrpcMessageServicer(ILogger<GrpcMessageServicer> log, GrpcHandlerBuilder builder, IJsonSerializer jsonSerializer)
         {
             _builder = builder;
             _log = log;
-            _jsonSerializer=jsonSerializer;
+            _jsonSerializer = jsonSerializer;
         }
 
-        public async Task<TMessageResult> ProcessAsync<TMessage, TMessageResult>(
-            TMessage message, ServerCallContext callContext)
-            where TMessage : BaseMessage
-            where TMessageResult :MessageResult, new()
+        public async Task<IMessageResultEnvelope> ProcessAsync(
+            GrpcContext context, Func<IMessageEnvelope, IServiceScope, Task<IMessageResultEnvelope>> handler)
         {
             try
             {
-                var context = new GrpcContext(message, callContext);
+                context.Hander = handler;
                 await _builder.DelegateProxyAsync(context);
-                if (context.Result is TMessageResult)
-                {
-                    return (TMessageResult)context.Result;
-                } 
-                else
-                {
-                    throw new InvalidOperationException("Cannot convert message result!");
-                }
+                return context.Result;
             }
             catch (Exception ex)
             {
-                _log.LogError(ex,$"Message execute failed! reason:{ex.GetExceptionMessage()} Request:{_jsonSerializer.Serialize(message)}");
+                _log.LogError(ex, $"Message execute failed! reason:{ex.GetExceptionMessage()} Request:{_jsonSerializer.Serialize(context.Message)}");
                 throw;
             }
-
         }
     }
 }

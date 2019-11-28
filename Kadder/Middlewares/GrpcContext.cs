@@ -1,12 +1,15 @@
 using System;
+using System.Threading.Tasks;
 using Grpc.Core;
+using Kadder.Messaging;
 using Kadder.Utilies;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Kadder.Middlewares
 {
     public class GrpcContext
     {
-        public GrpcContext(BaseMessage message, ServerCallContext callContext)
+        public GrpcContext(IMessageEnvelope message, ServerCallContext callContext)
         {
             Message = message ?? throw new ArgumentNullException("The message cannot be null!");
             CallContext = callContext ?? throw new ArgumentNullException("The message call context cannot be null!");
@@ -15,13 +18,22 @@ namespace Kadder.Middlewares
 
         public Guid Id { get; }
 
-        public BaseMessage Message { get; }
+        public IMessageEnvelope Message { get; }
 
-        public MessageResult Result { get; set; }
+        public IMessageResultEnvelope Result { get; set; }
+
+        internal Func<IMessageEnvelope, IServiceScope, Task<IMessageResultEnvelope>> Hander { get; set; }
 
         public ServerCallContext CallContext { get; }
 
-        public bool HasDone { get; set; }
+        [Obsolete("Please use 'Complete' method")]
+        public bool HasDone
+        {
+            get => IsDone;
+            set => IsDone = value;
+        }
+
+        public bool IsDone { get; private set; }
 
         public GrpcMessagePerformance PerformanceInfo { get; private set; }
 
@@ -37,6 +49,11 @@ namespace Kadder.Middlewares
                 PerformanceInfo = new GrpcMessagePerformance(DateTime.Now.AddDays(1));
             }
             PerformanceInfo.CalcUsedTime(DateTime.Now);
+        }
+
+        public void Complete()
+        {
+            IsDone = true;
         }
     }
 

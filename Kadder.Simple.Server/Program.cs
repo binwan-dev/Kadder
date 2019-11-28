@@ -2,9 +2,6 @@ using System;
 using System.Threading.Tasks;
 using Kadder.Middlewares;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Console;
-using Kadder;
 
 namespace Kadder.Simple.Server
 {
@@ -24,11 +21,12 @@ namespace Kadder.Simple.Server
                     Port = 3002,
                     NamespaceName = "Atlantis.Simple",
                     ServiceName = "AtlantisService",
-                    ScanAssemblies = new string[]
-                    {
-                        typeof(Program).Assembly.FullName
-                    }
+                    // ScanAssemblies = new string[]
+                    // {
+                    //     typeof(Program).Assembly.FullName
+                    // }
                 };
+                Console.WriteLine(builder.Options.ScanAssemblies[0]);
                 builder.AddInterceptor<LoggerInterceptor>();
             });
             services.AddScoped<IPersonMessageServicer, PersonMessageServicer>();
