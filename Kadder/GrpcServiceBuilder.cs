@@ -22,7 +22,7 @@ namespace Kadder
         private Dictionary<string, string> _oldVersionGrpcMethods = new Dictionary<string, string>();
         
         public List<ClassDescripter> GenerateGrpcProxy(GrpcServerOptions options, CodeBuilder codeBuilder = null)
-        {
+        {   
             if (codeBuilder == null)
             {
                 codeBuilder = CodeBuilder.Default;
@@ -35,7 +35,6 @@ namespace Kadder
             {
                 var bindServicesCode = new StringBuilder("return ServerServiceDefinition.CreateBuilder()\n");
                 protoServiceCode.AppendLine($"service {service.Name} {{");
-                protoServiceCode.AppendLine();
                 var @class = this.GenerateGrpcService(service);
                 var interfaces = service.GetInterfaces();
                 foreach (var method in service.GetMethods())
@@ -65,7 +64,8 @@ namespace Kadder
                     }
                 }
                 bindServicesCode.AppendLine(".Build();");
-                protoMessageCode.AppendLine("}");
+                protoServiceCode.AppendLine();
+                protoServiceCode.AppendLine("}");
                 @class.CreateMember(new MethodDescripter("BindServices", false).SetCode(bindServicesCode.ToString()).SetReturn("ServerServiceDefinition").SetAccess(AccessType.Public));
                 codeBuilder.AddAssemblyRefence(Assembly.GetExecutingAssembly().Location)
                     .AddAssemblyRefence(typeof(ServerServiceDefinition).Assembly.Location)
@@ -78,6 +78,11 @@ namespace Kadder
             }
             if (options.IsGeneralProtoFile)
             {
+                if(string.IsNullOrWhiteSpace(options.PackageName))
+                {
+                    options.PackageName = options.NamespaceName;
+                }
+                
                 var stringBuilder = new StringBuilder();
                 stringBuilder.AppendLine("syntax = \"proto3\";");
                 stringBuilder.AppendLine($@"option csharp_namespace = ""{options.NamespaceName}"";");

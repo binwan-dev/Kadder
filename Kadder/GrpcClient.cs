@@ -120,8 +120,6 @@ namespace Kadder
             
             var method = new Method<TRequest, TResponse>(
                 MethodType.Unary, serviceName, methodName, requestMarshaller, responseMarshaller);
-            Console.WriteLine(serviceName);
-            Console.WriteLine(methodName);
 
             var invoker = await GetInvokerAsync();
             var result = invoker.AsyncUnaryCall<TRequest, TResponse>(method, $"{_options.Host}:{_options.Port}", new CallOptions(), request);
