@@ -14,6 +14,8 @@ Kadder
 ## 功能
 
 - [x] 普通异步RPC请求调用
+- [x] 支持直接返回Task
+- [x] 支持无参数请求
 - [x] 中间件扩展
 - [x] 兼容第三方序列化（Json、MessagePack等）
 - [x] 支持.NetCore ServiceCollection 注册方式
