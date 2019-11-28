@@ -147,7 +147,6 @@ namespace Kadder
                 setResponseCode="new EmptyMessageResult()";
             }
             var code = $@"
-System.Console.WriteLine(""ddd"");
             var envelope = new MessageEnvelope<{messageName}>();
             envelope.Message = request;  
             var grpcContext = new GrpcContext(envelope, context);
