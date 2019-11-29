@@ -7,14 +7,48 @@ service IAnimalMessageServicer {
 rpc Hello(HelloMessage) returns(HelloMessageResult);
 
 }
+service AnimalMessageServicer {
+
+rpc Hello(HelloMessage) returns(HelloMessageResult);
+
+}
+service AttributeServicer {
+
+rpc Hello(EmptyMessage) returns(EmptyMessageResult);
+
+}
+service EndwidthKServicer {
+
+rpc Hello(EmptyMessage) returns(EmptyMessageResult);
+
+}
+service ImplAssignServicer {
+
+rpc HelloAssign(EmptyMessage) returns(EmptyMessageResult);
+
+}
+service ImplServicer {
+
+rpc Hello(EmptyMessage) returns(EmptyMessageResult);
+
+}
 service IPersonMessageServicer {
+
+rpc Hello(EmptyMessage) returns(EmptyMessageResult);
+
+}
+service PersonMessageServicer {
 
 rpc Hello(EmptyMessage) returns(EmptyMessageResult);
 
 }
 
 message HelloMessage {
-	string Name = 1;
+	string Age = 1;
+	string Nad = 2;
+	string Name = 3;
+	string Nams = 4;
+	string Sex = 5;
 }
 
 

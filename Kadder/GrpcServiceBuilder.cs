@@ -20,14 +20,14 @@ namespace Kadder
     {
         private List<string> _messages = new List<string>();
         private Dictionary<string, string> _oldVersionGrpcMethods = new Dictionary<string, string>();
-        
+
         public List<ClassDescripter> GenerateGrpcProxy(GrpcServerOptions options, CodeBuilder codeBuilder = null)
-        {   
+        {
             if (codeBuilder == null)
             {
                 codeBuilder = CodeBuilder.Default;
             }
-            var implInterfaceTypes = RefelectionHelper.GetImplInterfaceTypes(typeof(IMessagingServicer), true, options.GetScanAssemblies());
+            var implInterfaceTypes = options.GetKServicers();
             var classDescripterList = new List<ClassDescripter>();
             var protoMessageCode = new StringBuilder();
             var protoServiceCode = new StringBuilder();
@@ -37,7 +37,7 @@ namespace Kadder
                 protoServiceCode.AppendLine($"service {service.Name} {{");
                 var @class = this.GenerateGrpcService(service);
                 var interfaces = service.GetInterfaces();
-                foreach (var method in service.GetMethods())
+                foreach (var method in service.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly))
                 {
                     if (method.CustomAttributes.FirstOrDefault(p => p.AttributeType == typeof(NotGrpcMethodAttribute)) != null)
                     {
@@ -78,11 +78,11 @@ namespace Kadder
             }
             if (options.IsGeneralProtoFile)
             {
-                if(string.IsNullOrWhiteSpace(options.PackageName))
+                if (string.IsNullOrWhiteSpace(options.PackageName))
                 {
                     options.PackageName = options.NamespaceName;
                 }
-                
+
                 var stringBuilder = new StringBuilder();
                 stringBuilder.AppendLine("syntax = \"proto3\";");
                 stringBuilder.AppendLine($@"option csharp_namespace = ""{options.NamespaceName}"";");
@@ -137,14 +137,14 @@ namespace Kadder
             var requestCode = "messageEnvelope.Message";
             var responseCode = "var result = ";
             var setResponseCode = "result";
-            if(parameter.IsEmpty)
+            if (parameter.IsEmpty)
             {
-                requestCode=string.Empty;
+                requestCode = string.Empty;
             }
-            if(messageResultType.IsEmpty)
+            if (messageResultType.IsEmpty)
             {
                 responseCode = string.Empty;
-                setResponseCode="new EmptyMessageResult()";
+                setResponseCode = "new EmptyMessageResult()";
             }
             var code = $@"
             var envelope = new MessageEnvelope<{messageName}>();
@@ -226,7 +226,7 @@ namespace Kadder
             _oldVersionGrpcMethods.Add(key, key);
         }
 
-       private void GenerateProtoCode(MethodInfo method, RpcParameterInfo parameter, ref StringBuilder protoServiceCode, ref StringBuilder protoMessageCode)
+        private void GenerateProtoCode(MethodInfo method, RpcParameterInfo parameter, ref StringBuilder protoServiceCode, ref StringBuilder protoMessageCode)
         {
             var str = $"rpc {method.Name.Replace("Async", "")}({parameter.ParameterType.Name}) returns({GrpcServiceBuilder.GetMethodReturn(method).Name});";
             protoServiceCode.AppendLine();
@@ -353,9 +353,9 @@ namespace Kadder
                 return new RpcMethodReturnType(genericTypes[0]);
             }
 
-            if(method.ReturnType.FullName == typeof(Task).FullName || method.ReturnType.FullName == typeof(void).FullName)
+            if (method.ReturnType.FullName == typeof(Task).FullName || method.ReturnType.FullName == typeof(void).FullName)
             {
-                return new RpcMethodReturnType(typeof(EmptyMessageResult),true);
+                return new RpcMethodReturnType(typeof(EmptyMessageResult), true);
             }
 
             return new RpcMethodReturnType(method.ReturnType);

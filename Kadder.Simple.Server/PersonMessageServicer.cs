@@ -22,6 +22,10 @@ namespace Kadder.Simple.Server
     public class HelloMessage : BaseMessage
     {
         public string Name { get; set; }
+        public string Nams { get; set; }
+        public string Age { get; set; }
+        public string Sex { get; set; }
+        public string Nad { get; set; }
     }
 
     [ProtoContract(ImplicitFields=ImplicitFields.AllPublic)]

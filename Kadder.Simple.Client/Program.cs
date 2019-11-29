@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Threading.Tasks;
-using Fnlinker.AIService.Protocol.Entities.Ocr;
-using Fnlinker.AIService.Protocol.Services;
 using Kadder;
 using Kadder.Simple.Client;
 using Kadder.Simple.Server;
@@ -99,6 +97,9 @@ namespace Atlantis.Grpc.Simple.Client
             var message = new HelloMessage() { Name = "test interceptor" };
             var resuslt = servicer.HelloAsync();
             resuslt = servicer.HelloAsync();
+
+            var implServicer= provider.GetService<ImplServicer>();
+            implServicer.HelloAsync().Wait();
             // Console.WriteLine(resuslt.Result);
         }
         

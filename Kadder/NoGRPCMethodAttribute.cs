@@ -9,4 +9,7 @@ namespace Kadder
     public class NotGrpcServicerAttribute:Attribute
     {
     }
+
+    public class NonKMethodAttribute:Attribute
+    {}
 }

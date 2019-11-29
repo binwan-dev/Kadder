@@ -31,6 +31,9 @@ namespace Kadder.Simple.Server
             });
             services.AddScoped<IPersonMessageServicer, PersonMessageServicer>();
             services.AddScoped<IAnimalMessageServicer, AnimalMessageServicer>();
+            services.AddScoped<ImplServicer>();
+            services.AddScoped<AttributeServicer>();
+            services.AddScoped<EndwidthKServicer>();
 
             var provider = services.BuildServiceProvider();
             provider.StartKadderGrpc();

@@ -16,8 +16,7 @@ namespace Kadder
         public IDictionary<Type, string> GenerateHandler(
             GrpcOptions options, GrpcClient client, ref CodeBuilder codeBuilder)
         {
-            var types = RefelectionHelper.GetImplInterfaceTypes(
-                typeof(IMessagingServicer), true, options.GetScanAssemblies());
+            var types = options.GetKServicers();
             var grpcServiceDic = new Dictionary<Type, string>();
 
             foreach (var typeService in types)
@@ -31,7 +30,7 @@ namespace Kadder
                 grpcServiceDic.Add(typeService, $"{codeBuilder.Namespace}.{className}");
 
                 var baseInterfaces = typeService.GetInterfaces();
-                foreach (var method in typeService.GetMethods())
+                foreach (var method in typeService.GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly))
                 {
                     var notGrpcMethodCount = method.CustomAttributes.Count(
                         p => p.AttributeType == typeof(NotGrpcMethodAttribute));
@@ -54,17 +53,17 @@ namespace Kadder
 
                     var requestName = parameters[0].ParameterType.Name.ToLower();
                     var responseType = GetMethodReturn(method);
-                    var returnTypeCode = $"Task<{responseType.Name}>";
-                    var returnCode="return ";
+                    var returnTypeCode = $"new Task<{responseType.Name}>";
+                    var returnCode = "return ";
                     var requestCode = requestName;
-                    if(parameters[0].IsEmpty)
+                    if (parameters[0].IsEmpty)
                     {
-                        requestCode="new EmptyMessage()";
+                        requestCode = "new EmptyMessage()";
                     }
-                    if(responseType.IsEmpty)
+                    if (responseType.IsEmpty)
                     {
-                        returnTypeCode = method.ReturnType.Name;
-                        returnCode=string.Empty;
+                        returnTypeCode = $"new {method.ReturnType.Name}";
+                        returnCode = string.Empty;
                     }
                     var methodName = method.Name.Replace("Async", "");
                     var methodDescripter = new MethodDescripter(method.Name, true)
@@ -72,7 +71,7 @@ namespace Kadder
                         .SetReturn(returnTypeCode)
                         .AppendCode($@"var client = GrpcClientExtension.ClientDic[""{client.ID.ToString()}""];")
                         .AppendCode($@"{returnCode}await client.CallAsync<{parameters[0].ParameterType.Name},{responseType.Name}>({requestCode}, ""{methodName}"", ""{typeService.Name}"");");
-                    if(!parameters[0].IsEmpty)
+                    if (!parameters[0].IsEmpty)
                     {
                         methodDescripter.SetParams(new ParameterDescripter(parameters[0].ParameterType.Name, requestName));
                     }
