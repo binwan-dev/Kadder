@@ -67,11 +67,4 @@ namespace Kadder
         }
     }
 
-    public class ProtoPropertyCompare : IComparer<string>
-    {
-        public int Compare(string x, string y)
-        {
-            return string.CompareOrdinal(x, y);
-        }
-    }
 }

@@ -4,12 +4,9 @@ using System.Threading.Tasks;
 using Atlantis.Common.CodeGeneration;
 using Grpc.Core;
 using Grpc.Core.Interceptors;
-using Grpc.Core.Logging;
 using Kadder.Utilies;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
-using ILogger = Microsoft.Extensions.Logging.ILogger;
 
 namespace Kadder
 {
@@ -51,11 +48,6 @@ namespace Kadder
         public Guid ID { get; }
 
         internal IDictionary<Type, Type> GrpcServiceDic { get; private set; }
-
-        public T GetService<T>() where T : class
-        {
-            return GrpcClientBuilder.ServiceProvider.GetService<T>();
-        }
 
         public virtual async Task<TResponse> CallAsync<TRequest, TResponse>(
             TRequest request, string methodName, string serviceName)

@@ -2,19 +2,18 @@ using System;
 using System.Collections.Generic;
 using Grpc.Core.Interceptors;
 using Kadder.Utilies;
-using Microsoft.Extensions.Options;
 
 namespace Kadder
 {
     public class GrpcClientBuilder
     {
-        internal IList<Type> Interceptors { get; }
+        public IList<Type> Interceptors { get; }
 
         public static IServiceProvider ServiceProvider { get; set; }
 
         public IBinarySerializer BinarySerializer { get; set; }
 
-        internal IList<GrpcClientMetadata> ClientMetadatas { get; private set; }
+        public IList<GrpcClientMetadata> ClientMetadatas { get; private set; }
 
         public GrpcClientBuilder()
         {
