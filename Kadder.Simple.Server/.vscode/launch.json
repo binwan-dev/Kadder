@@ -9,7 +9,7 @@
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build",
-            "program": "${workspaceFolder}/bin/Debug/netcoreapp2.2/Atlantis.Grpc.Simple.Server.dll",
+            "program": "${workspaceFolder}/bin/Debug/netcoreapp2.2/Kadder.Simple.Server.dll",
             "args": [],
             "cwd": "${workspaceFolder}",
             "console": "internalConsole",

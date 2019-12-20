@@ -21,6 +21,7 @@ namespace Kadder
         private Channel _channel;
         private readonly IDictionary<string, string> _oldMethodDic;
         private readonly Lazy<ILogger<GrpcClient>> _log;
+        private DateTime _lastConnectedTime;
 
         public GrpcClient(
             GrpcClientMetadata metadata, GrpcClientBuilder builder, GrpcServiceCallBuilder serviceCallBuilder)
@@ -29,6 +30,7 @@ namespace Kadder
             _metadata = metadata;
             _options = metadata.Options;
             ID = Guid.NewGuid();
+            _lastConnectedTime = DateTime.Now;
             GrpcServiceDic = new Dictionary<Type, Type>();
             _oldMethodDic = new Dictionary<string, string>();
             var namespaces = $"Kadder.Client.Services";
@@ -82,7 +84,7 @@ namespace Kadder
                 return response;
             }
         }
-        
+
         /// <summary>
         /// Support old version 0.0.6 and before version
         /// </summary>
@@ -109,7 +111,7 @@ namespace Kadder
 
             var requestMarshaller = new Marshaller<TRequest>(serializer.Serialize, serializer.Deserialize<TRequest>);
             var responseMarshaller = new Marshaller<TResponse>(serializer.Serialize, serializer.Deserialize<TResponse>);
-            
+
             var method = new Method<TRequest, TResponse>(
                 MethodType.Unary, serviceName, methodName, requestMarshaller, responseMarshaller);
 
@@ -120,7 +122,14 @@ namespace Kadder
 
         protected virtual async Task<CallInvoker> GetInvokerAsync()
         {
-            if (_grpcInvoker == null)
+            if (_channel != null &&
+                (_lastConnectedTime.AddMinutes(1) < DateTime.Now || _channel.State != ChannelState.Ready))
+            {
+                await _channel.ShutdownAsync();
+                _channel = null;
+            }
+
+            if (_channel == null)
             {
                 _channel = new Channel(_options.Host, _options.Port, ChannelCredentials.Insecure);
                 await _channel.ConnectAsync();
@@ -136,11 +145,8 @@ namespace Kadder
                     _grpcInvoker = _grpcInvoker.Intercept(interceptor);
                 }
             }
-            if (_channel.State != ChannelState.Ready)
-            {
-                await _channel.ConnectAsync();
-                _grpcInvoker = new DefaultCallInvoker(_channel);
-            }
+
+            _lastConnectedTime = DateTime.Now;
             return _grpcInvoker;
         }
     }

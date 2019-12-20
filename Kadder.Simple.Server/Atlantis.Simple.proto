@@ -34,12 +34,12 @@ rpc Hello(EmptyMessage) returns(EmptyMessageResult);
 }
 service IPersonMessageServicer {
 
-rpc Hello(EmptyMessage) returns(EmptyMessageResult);
+rpc Hello(EmptyMessage) returns(HelloMessageResult);
 
 }
 service PersonMessageServicer {
 
-rpc Hello(EmptyMessage) returns(EmptyMessageResult);
+rpc Hello(EmptyMessage) returns(HelloMessageResult);
 
 }
 

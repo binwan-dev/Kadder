@@ -6,6 +6,7 @@ using Kadder.Simple.Client;
 using Kadder.Simple.Server;
 using Kadder.Utilies;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using ProtoBuf;
 
 namespace Atlantis.Grpc.Simple.Client
@@ -14,24 +15,25 @@ namespace Atlantis.Grpc.Simple.Client
     {
         static void Main(string[] args)
         {
-            var options=new GrpcOptions()
+            var options = new GrpcOptions()
             {
-                Host="127.0.0.1",
-                Port=3002,
-                NamespaceName="Atlantis.Simple",
-                ServiceName="AtlantisService",
-                ScanAssemblies=new string[]
+                Host = "127.0.0.1",
+                Port = 3002,
+                NamespaceName = "Atlantis.Simple",
+                ServiceName = "AtlantisService",
+                ScanAssemblies = new string[]
                 {
                     typeof(IPersonMessageServicer).Assembly.FullName
                 }
             };
 
-            IServiceCollection services=new ServiceCollection();
-            services.AddLogging();
-            services.AddKadderGrpcClient(builder=>
+            IServiceCollection services = new ServiceCollection();
+            services.AddLogging(b=>b.AddConsole());
+            services.AddTransient(typeof(ILogger<>),typeof(NullLogger<>));
+            services.AddKadderGrpcClient(builder =>
             {
                 builder.RegClient(options);
-                builder.RegShareInterceptor<Kadder.Simple.Client.LoggerInterceptor>();
+                //builder.RegShareInterceptor<Kadder.Simple.Client.LoggerInterceptor>();
             });
 
             var provider = services.BuildServiceProvider();
@@ -40,7 +42,7 @@ namespace Atlantis.Grpc.Simple.Client
             TestInterceptor(provider);
 
             Console.ReadLine();
-            
+
             // var channel = new Channel("127.0.0.1", 3002, ChannelCredentials.Insecure);
 
             // channel.ConnectAsync().Wait();
@@ -95,13 +97,16 @@ namespace Atlantis.Grpc.Simple.Client
         {
             var servicer = provider.GetService<IPersonMessageServicer>();
             var message = new HelloMessage() { Name = "test interceptor" };
-            var resuslt = servicer.HelloAsync();
-            resuslt = servicer.HelloAsync();
 
-            var implServicer= provider.GetService<ImplServicer>();
-            implServicer.HelloAsync().Wait();
-            // Console.WriteLine(resuslt.Result);
+            while (true)
+            {
+                var resuslt = servicer.HelloAsync().Result;
+                Console.WriteLine(resuslt.Result);
+
+                // Console.WriteLine(resuslt.Result);
+                System.Threading.Thread.Sleep(1000);
+            }
         }
-        
+
     }
 }
