@@ -125,7 +125,12 @@ namespace Kadder
             if (_channel != null &&
                 (_lastConnectedTime.AddMinutes(1) < DateTime.Now || _channel.State != ChannelState.Ready))
             {
-                await _channel.ShutdownAsync();
+                try
+                {
+                    await _channel.ShutdownAsync();
+                }
+                catch(Exception)
+                {}
                 _channel = null;
             }
 
