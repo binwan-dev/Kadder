@@ -22,6 +22,7 @@ namespace Kadder
         private readonly IDictionary<string, string> _oldMethodDic;
         private readonly Lazy<ILogger<GrpcClient>> _log;
         private DateTime _lastConnectedTime;
+        private object _lockObj = new object();
 
         public GrpcClient(
             GrpcClientMetadata metadata, GrpcClientBuilder builder, GrpcServiceCallBuilder serviceCallBuilder)
@@ -122,37 +123,39 @@ namespace Kadder
 
         protected virtual async Task<CallInvoker> GetInvokerAsync()
         {
-            if (_channel != null &&
-                (_lastConnectedTime.AddMinutes(1) < DateTime.Now || _channel.State != ChannelState.Ready))
+            lock (_lockObj)
             {
-                try
+                if (_grpcInvoker == null)
+                {
+                    _grpcInvoker = new DefaultCallInvoker(_channel);
+                    foreach (var interceptorType in _clientBuilder.Interceptors)
+                    {
+                        var interceptor = (Interceptor)GrpcClientBuilder.ServiceProvider.GetService(interceptorType);
+                        _grpcInvoker = _grpcInvoker.Intercept(interceptor);
+                    }
+                    foreach (var interceptorType in _metadata.PrivateInterceptors)
+                    {
+                        var interceptor = (Interceptor)GrpcClientBuilder.ServiceProvider.GetService(interceptorType);
+                        _grpcInvoker = _grpcInvoker.Intercept(interceptor);
+                    }
+                }
+
+                if (_channel != null &&
+                    (_lastConnectedTime.AddMinutes(1) < DateTime.Now || _channel.State != ChannelState.Ready))
                 {
                     await _channel.ShutdownAsync();
+                    _channel = null;
                 }
-                catch(Exception)
-                {}
-                _channel = null;
-            }
 
-            if (_channel == null)
-            {
-                _channel = new Channel(_options.Host, _options.Port, ChannelCredentials.Insecure);
-                await _channel.ConnectAsync();
-                _grpcInvoker = new DefaultCallInvoker(_channel);
-                foreach (var interceptorType in _clientBuilder.Interceptors)
+                if (_channel == null)
                 {
-                    var interceptor = (Interceptor)GrpcClientBuilder.ServiceProvider.GetService(interceptorType);
-                    _grpcInvoker = _grpcInvoker.Intercept(interceptor);
+                    _channel = new Channel(_options.Host, _options.Port, ChannelCredentials.Insecure);
+                    await _channel.ConnectAsync();
                 }
-                foreach (var interceptorType in _metadata.PrivateInterceptors)
-                {
-                    var interceptor = (Interceptor)GrpcClientBuilder.ServiceProvider.GetService(interceptorType);
-                    _grpcInvoker = _grpcInvoker.Intercept(interceptor);
-                }
-            }
 
-            _lastConnectedTime = DateTime.Now;
-            return _grpcInvoker;
+                _lastConnectedTime = DateTime.Now;
+                return _grpcInvoker;
+            }
         }
     }
 }
