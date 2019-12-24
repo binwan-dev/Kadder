@@ -28,8 +28,8 @@ namespace Atlantis.Grpc.Simple.Client
             };
 
             IServiceCollection services = new ServiceCollection();
-            services.AddLogging(b=>b.AddConsole());
-            services.AddTransient(typeof(ILogger<>),typeof(NullLogger<>));
+            services.AddLogging(b => b.AddConsole());
+            services.AddTransient(typeof(ILogger<>), typeof(NullLogger<>));
             services.AddKadderGrpcClient(builder =>
             {
                 builder.RegClient(options);
@@ -98,13 +98,27 @@ namespace Atlantis.Grpc.Simple.Client
             var servicer = provider.GetService<IPersonMessageServicer>();
             var message = new HelloMessage() { Name = "test interceptor" };
 
-            while (true)
+            for (var i = 0; i < 10; i++)
             {
-                var resuslt = servicer.HelloAsync().Result;
-                Console.WriteLine(resuslt.Result);
+                Task.Run(() =>
+                {
+                    while (true)
+                    {
+                        try
+                        {
+                        var resuslt = servicer.HelloAsync().Result;
+                        Console.WriteLine(resuslt.Result);
+                        }
+                        catch(Exception ex)
+                        {
+                            Console.WriteLine(ex.ToString());
+                        }
 
-                // Console.WriteLine(resuslt.Result);
-                System.Threading.Thread.Sleep(1000);
+                        // Console.WriteLine(resuslt.Result);
+                        System.Threading.Thread.Sleep(1000);
+                    }
+
+                });
             }
         }
 
