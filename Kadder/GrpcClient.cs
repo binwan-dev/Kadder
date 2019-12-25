@@ -21,9 +21,10 @@ namespace Kadder
         private readonly GrpcClientMetadata _metadata;
         private Channel _channel;
         private readonly IDictionary<string, string> _oldMethodDic;
-        private readonly Lazy<ILogger<GrpcClient>> _log;
+        private ILogger<GrpcClient> _log;
         private DateTime _lastConnectedTime;
         private int _connecting = 0;
+        private bool _isConnected=false;
 
         public GrpcClient(
             GrpcClientMetadata metadata, GrpcClientBuilder builder, GrpcServiceCallBuilder serviceCallBuilder)
@@ -37,7 +38,6 @@ namespace Kadder
             _oldMethodDic = new Dictionary<string, string>();
             var namespaces = $"Kadder.Client.Services";
             _codeBuilder = new CodeBuilder(namespaces, namespaces);
-            _log = new Lazy<ILogger<GrpcClient>>(() => GrpcClientBuilder.ServiceProvider.GetService<ILogger<GrpcClient>>());
 
             var grpcServiceDic = serviceCallBuilder.GenerateHandler(_options, this, ref _codeBuilder);
             _codeAssembly = _codeBuilder.BuildAsync().Result;
@@ -53,6 +53,18 @@ namespace Kadder
 
         internal IDictionary<Type, Type> GrpcServiceDic { get; private set; }
 
+        protected ILogger<GrpcClient> Log
+        {
+            get
+            {
+                if (_log == null)
+                {
+                    _log = GrpcClientBuilder.ServiceProvider.GetService<ILogger<GrpcClient>>();
+                }
+                return _log;
+            }
+        }
+
         public virtual async Task<TResponse> CallAsync<TRequest, TResponse>(
             TRequest request, string methodName, string serviceName)
             where TRequest : class
@@ -63,7 +75,7 @@ namespace Kadder
             {
                 if (_oldMethodDic.ContainsKey(name))
                 {
-                    _log.Value.LogWarning($"ServiceCall has call old version. Name[{name}]");
+                    Log.LogWarning($"ServiceCall has call old version. Name[{name}]");
                     var response = await CallForOldVersionAsync<TRequest, TResponse>(request, methodName);
                     return response;
                 }
@@ -77,7 +89,7 @@ namespace Kadder
                 {
                     throw ex;
                 }
-                _log.Value.LogWarning($"ServiceCall has call old version. Name[{name}]");
+                Log.LogWarning($"ServiceCall has call old version. Name[{name}]");
                 var response = await CallForOldVersionAsync<TRequest, TResponse>(request, methodName);
                 if (!_oldMethodDic.Keys.Contains(name))
                 {
@@ -136,6 +148,7 @@ namespace Kadder
                     throw ex;
                 }
 
+                _isConnected=false;
                 await CreateChannelAsync();
                 return await InvokeAsync(method, host, request);
             }
@@ -164,24 +177,34 @@ namespace Kadder
 
         protected async virtual Task<Channel> CreateChannelAsync()
         {
-            if (!(Interlocked.CompareExchange(ref _connecting, 1, 0) == 0))
+            while(!(Interlocked.CompareExchange(ref _connecting, 1, 0) == 0))
             {
-                Console.WriteLine("wait connect");
-                System.Threading.Thread.Sleep(10);
-                return _channel;
+                System.Threading.Thread.Sleep(500);
+                if(_isConnected)
+                {
+                    return _channel;
+                }
             }
 
             Console.WriteLine("connect");
             try
             {
                 _channel = new Channel(_options.Host, _options.Port, ChannelCredentials.Insecure);
-                await _channel.ConnectAsync(DateTime.Now.AddSeconds(10));
+                await _channel.ConnectAsync(DateTime.UtcNow.AddSeconds(_metadata.Options.ConnectSecondTimeout));
+                _isConnected=true;
                 return _channel;
+            }
+            catch(TaskCanceledException)
+            {
+                throw new RpcException(new Status(StatusCode.Aborted,""),$"Faild connect {_channel.Target}");
             }
             catch (Exception ex)
             {
-                Interlocked.Exchange(ref _connecting, 0);
                 throw ex;
+            }
+            finally
+            {
+                Interlocked.Exchange(ref _connecting, 0);
             }
         }
 

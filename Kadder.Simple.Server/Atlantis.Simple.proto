@@ -7,11 +7,6 @@ service IAnimalMessageServicer {
 rpc Hello(HelloMessage) returns(HelloMessageResult);
 
 }
-service AnimalMessageServicer {
-
-rpc Hello(HelloMessage) returns(HelloMessageResult);
-
-}
 service AttributeServicer {
 
 rpc Hello(EmptyMessage) returns(EmptyMessageResult);
@@ -33,11 +28,6 @@ rpc Hello(EmptyMessage) returns(EmptyMessageResult);
 
 }
 service IPersonMessageServicer {
-
-rpc Hello(EmptyMessage) returns(HelloMessageResult);
-
-}
-service PersonMessageServicer {
 
 rpc Hello(EmptyMessage) returns(HelloMessageResult);
 

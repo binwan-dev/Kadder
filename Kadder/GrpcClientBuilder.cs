@@ -21,7 +21,13 @@ namespace Kadder
             ClientMetadatas = new List<GrpcClientMetadata>();
         }
 
+        [Obsolete("Use RegClient(GrpcClientOptions) version")]
         public GrpcClientMetadata RegClient(GrpcOptions options)
+        {
+            return RegClient(new GrpcClientOptions(options));
+        }
+        
+        public GrpcClientMetadata RegClient(GrpcClientOptions options)
         {
             var metadata = new GrpcClientMetadata(options);
             ClientMetadatas.Add(metadata);

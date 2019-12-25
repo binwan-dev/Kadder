@@ -36,6 +36,7 @@ namespace Kadder
                         p => p.AttributeType == typeof(NotGrpcMethodAttribute));
                     if (notGrpcMethodCount > 0)
                     {
+                        classDescripter.CreateMember(GenerateNoGrpcMethod(method, classDescripter, codeBuilder));
                         continue;
                     }
 
@@ -62,7 +63,7 @@ namespace Kadder
                     }
                     if (responseType.IsEmpty)
                     {
-                        returnTypeCode = $"new {method.ReturnType.Name}";
+                        returnTypeCode = $"{method.ReturnType.Name}";
                         returnCode = string.Empty;
                     }
                     var methodName = method.Name.Replace("Async", "");
@@ -79,10 +80,64 @@ namespace Kadder
                         .AddUsing(responseType.Namespace).AddUsing(parameters[0].ParameterType.Namespace);
                 }
                 codeBuilder.CreateClass(classDescripter)
-                    .AddAssemblyRefence(typeService.Assembly.Location);
+                    .AddAssemblyRefence(typeService.Assembly);
             }
-            codeBuilder.AddAssemblyRefence(this.GetType().Assembly.Location);
+            codeBuilder.AddAssemblyRefence(this.GetType().Assembly);
             return grpcServiceDic;
+        }
+
+        private static MethodDescripter GenerateNoGrpcMethod(MethodInfo method, ClassDescripter classDescripter, CodeBuilder codeBuilder)
+        {
+            var methodDescripter = new MethodDescripter(method.Name)
+                .SetAccess(AccessType.Public)
+                .SetReturn(GetReturnName(method.ReturnType))
+                .AppendCode("throw new System.NotImplementedException();");
+            var parameterDescripters = new List<ParameterDescripter>();
+            foreach (var param in method.GetParameters())
+            {
+                parameterDescripters.Add(new ParameterDescripter(GetReturnName(param.ParameterType), param.Name));
+                codeBuilder.AddAssemblyRefence(param.ParameterType.Assembly);
+            }
+            methodDescripter.SetParams(parameterDescripters.ToArray());
+            
+            return methodDescripter;
+
+            string GetReturnName(Type type)
+            {
+                codeBuilder.AddAssemblyRefence(type.Assembly);
+
+                if(type.IsGenericType)
+                {
+                    var typeName=$"{type.FullName.Split('`')[0]}<";
+                    foreach(var itemType in type.GenericTypeArguments)
+                    {
+                        typeName+=$"{GetReturnName(itemType)},";
+                    }
+                    return $"{typeName.Remove(typeName.Length-1)}>";
+                }
+                else if(type.IsValueType||type.Name.StartsWith("String"))
+                {
+                    switch(type.Name)
+                    {
+                        case "Int16" :return "short";
+                        case "Int32" :return "int";
+                        case "Int64" :return "long";
+                        case "UInt16" :return "ushort";
+                        case "UInt32" :return "uint";
+                        case "UInt64" :return "ulong";
+                        case "String" :return "string";
+                        case "Double":return "double";
+                        case "Single":return "float";
+                        case "Decimal":return "decimal";
+                        case "Boolean":return "bool";
+                        default:return string.Empty;
+                    }
+                }
+                else
+                {
+                    return type.FullName;
+                }
+            }
         }
 
         private static RpcMethodReturnType GetMethodReturn(MethodInfo method)

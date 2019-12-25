@@ -15,7 +15,7 @@ namespace Atlantis.Grpc.Simple.Client
     {
         static void Main(string[] args)
         {
-            var options = new GrpcOptions()
+            var options = new GrpcClientOptions()
             {
                 Host = "127.0.0.1",
                 Port = 3002,
@@ -38,7 +38,9 @@ namespace Atlantis.Grpc.Simple.Client
 
             var provider = services.BuildServiceProvider();
             provider.ApplyKadderGrpcClient();
-
+            var log=provider.GetService<ILogger<GrpcClient>>();
+            log.LogInformation("dd");
+            
             TestInterceptor(provider);
 
             Console.ReadLine();

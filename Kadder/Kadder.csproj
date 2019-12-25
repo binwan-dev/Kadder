@@ -2,13 +2,13 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
-    <Version>0.0.17</Version>
-    <PackageVersion>0.0.17</PackageVersion>
+    <Version>0.0.18</Version>
+    <PackageVersion>0.0.18</PackageVersion>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Atlantis.Common" Version="0.0.6" />
+    <PackageReference Include="Atlantis.Common" Version="0.0.7" />
     <PackageReference Include="Grpc.Core" Version="1.19.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="2.2.0" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="2.2.0" />

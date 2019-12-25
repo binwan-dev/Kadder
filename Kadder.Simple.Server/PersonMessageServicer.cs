@@ -1,5 +1,6 @@
 using System.Threading.Tasks;
 using Kadder.Utilies;
+using Microsoft.Extensions.Logging;
 using ProtoBuf;
 
 namespace Kadder.Simple.Server
@@ -7,14 +8,26 @@ namespace Kadder.Simple.Server
     public interface IPersonMessageServicer:IMessagingServicer
     {
         Task<HelloMessageResult> HelloAsync();
+
+        [NotGrpcMethod]
+        Task NoGrpcMethodAsync(ushort logg);
     }
 
     public class PersonMessageServicer : IPersonMessageServicer
     {
+        public PersonMessageServicer()
+        {
+        }
+
         public Task<HelloMessageResult> HelloAsync()
         {
             // var result = $"Hello, {message.Name}";
             return Task.FromResult(new HelloMessageResult(){Result="server"});
+        }
+
+        public Task NoGrpcMethodAsync(ushort logg)
+        {
+            throw new System.NotImplementedException();
         }
     }
 

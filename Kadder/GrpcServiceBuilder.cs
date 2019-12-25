@@ -67,12 +67,12 @@ namespace Kadder
                 protoServiceCode.AppendLine();
                 protoServiceCode.AppendLine("}");
                 @class.CreateMember(new MethodDescripter("BindServices", false).SetCode(bindServicesCode.ToString()).SetReturn("ServerServiceDefinition").SetAccess(AccessType.Public));
-                codeBuilder.AddAssemblyRefence(Assembly.GetExecutingAssembly().Location)
-                    .AddAssemblyRefence(typeof(ServerServiceDefinition).Assembly.Location)
-                    .AddAssemblyRefence(typeof(ServerServiceDefinition).Assembly.Location)
-                    .AddAssemblyRefence(typeof(ServiceProviderServiceExtensions).Assembly.Location)
-                    .AddAssemblyRefence(typeof(Console).Assembly.Location)
-                    .AddAssemblyRefence(service.Assembly.Location);
+                codeBuilder.AddAssemblyRefence(Assembly.GetExecutingAssembly())
+                    .AddAssemblyRefence(typeof(ServerServiceDefinition).Assembly)
+                    .AddAssemblyRefence(typeof(ServerServiceDefinition).Assembly)
+                    .AddAssemblyRefence(typeof(ServiceProviderServiceExtensions).Assembly)
+                    .AddAssemblyRefence(typeof(Console).Assembly)
+                    .AddAssemblyRefence(service.Assembly);
                 codeBuilder.CreateClass(@class);
                 classDescripterList.Add(@class);
             }
@@ -189,8 +189,8 @@ namespace Kadder
                     {method.Name.Replace("Async", "")})");
 
             codeBuilder
-                .AddAssemblyRefence(parameter.ParameterType.Assembly.Location)
-                .AddAssemblyRefence(GrpcServiceBuilder.GetMethodReturn(method).Assembly.Location);
+                .AddAssemblyRefence(parameter.ParameterType.Assembly)
+                .AddAssemblyRefence(GrpcServiceBuilder.GetMethodReturn(method).Assembly);
         }
 
         /// <summary>
