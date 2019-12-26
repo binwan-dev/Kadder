@@ -141,9 +141,10 @@ namespace Kadder
                 var result = invoker.AsyncUnaryCall<TRequest, TResponse>(method, host, new CallOptions(), request);
                 return await result.ResponseAsync;
             }
-            catch (RpcException ex)
+            catch (Exception ex)
             {
-                if (ex.StatusCode != StatusCode.Unavailable)
+                RpcException rpcException;
+                if (!ex.EatException<RpcException>(out rpcException) || rpcException.Status.StatusCode != StatusCode.Unavailable)
                 {
                     throw ex;
                 }
