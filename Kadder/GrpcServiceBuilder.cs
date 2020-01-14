@@ -204,7 +204,9 @@ namespace Kadder
         private void GenerateGrpcCallCodeForOldVersion(MethodInfo method, RpcParameterInfo parameter, string namespaceName,
             string serviceName, CodeBuilder codeBuilder, ref StringBuilder bindServicesCode)
         {
-            var key = $"{namespaceName}.{serviceName}";
+            var serviceDefName = $"{namespaceName}.{serviceName}";
+            var methodDefName=method.Name.Replace("Async", "");
+            var key=$"{serviceDefName}.{methodDefName}";
             if (_oldVersionGrpcMethods.ContainsKey(key))
             {
                 return;
@@ -212,8 +214,8 @@ namespace Kadder
             bindServicesCode.AppendLine($@"
                 .AddMethod(new Method<{parameter.ParameterType.Name}, {GrpcServiceBuilder.GetMethodReturn(method).Name}>(
                     MethodType.Unary,
-                    ""{key}"",
-                    ""{method.Name.Replace("Async", "")}"",
+                    ""{serviceDefName}"",
+                    ""{methodDefName}"",
                     new Marshaller<{parameter.ParameterType.Name}>(
                         _binarySerializer.Serialize,
                         _binarySerializer.Deserialize<{parameter.ParameterType.Name}>
