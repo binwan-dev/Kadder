@@ -323,6 +323,8 @@ namespace Kadder
                         return "int64";
                     case "string":
                         return "string";
+                    case "byte[]":
+                        return "bytes";
                     default:
                         if (type.Name.Contains("[]"))
                             return $"repeated {GetFiledType(type.GetElementType())}";
