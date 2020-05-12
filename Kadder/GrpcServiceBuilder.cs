@@ -299,7 +299,7 @@ namespace Kadder
 
         private (string Proto,List<string> Types) GetProto(Type type)
         {
-            var p=RuntimeTypeModel.Default.GetSchema(type,ProtoSyntax.Proto3);
+            var p=RuntimeTypeModel.Default.GetSchema(type,ProtoSyntax.Proto3).Replace("\r", "");
             var arr=p.Split('\n');
             var proto=new StringBuilder();
             var types=new List<string>();
