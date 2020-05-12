@@ -6,6 +6,7 @@ using Kadder.Messaging;
 using Kadder.Utilies;
 using Microsoft.Extensions.DependencyInjection;
 using ProtoBuf;
+using ProtoBuf.Meta;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -89,12 +90,19 @@ namespace Kadder
                 stringBuilder.AppendLine($"package {options.PackageName};\n");
                 stringBuilder.Append(protoServiceCode);
                 stringBuilder.AppendLine();
+                var messageCode=protoMessageCode.ToString();
+                if(messageCode.Contains(".bcl."))
+                {
+                    protoMessageCode.Replace(".bcl.", "");
+                    protoMessageCode.AppendLine(Bcl.Proto);
+                }
                 stringBuilder.Append(protoMessageCode);
                 var path = $"{Environment.CurrentDirectory}/{options.NamespaceName}.proto";
                 if (File.Exists(path))
                 {
                     File.Delete(path);
                 }
+                
                 File.WriteAllText(path, stringBuilder.ToString());
                 _messages = null;
             }
@@ -252,101 +260,9 @@ namespace Kadder
             {
                 return string.Empty;
             }
-            var messageCode = new StringBuilder($"message {messageType.Name} {{");
-            var enumCode = new StringBuilder();
-            var refenceCode = new StringBuilder();
-            messageCode.AppendLine();
-            var properties = messageType.GetProperties().Where(p => p.DeclaringType == messageType);
-            var isNeedAutoIndex = !(properties.FirstOrDefault(p => p.GetCustomAttribute(typeof(ProtoMemberAttribute)) != null) != null);
-            var index = 1;
-            foreach (var item in properties.OrderBy(p => p.Name))
-            {
-                if (item.GetCustomAttribute(typeof(ProtoIgnoreAttribute)) != null) continue;
-                if (!isNeedAutoIndex)
-                {
-                    var memberAttribute = item.GetCustomAttribute<ProtoMemberAttribute>();
-                    if (memberAttribute == null)
-                    {
-                        continue;
-                    }
-                    messageCode.Append($"\t{GetFiledType(item.PropertyType)} {item.Name} = {memberAttribute.Tag};\n");
-                }
-                else
-                {
-                    if (item.GetCustomAttribute(typeof(ProtoIgnoreAttribute)) != null)
-                    {
-                        continue;
-                    }
-                    messageCode.Append($"\t{GetFiledType(item.PropertyType)} {item.Name} = {index};\n");
-                    index++;
-                }
-
-                if (!item.PropertyType.IsGenericType && string.Equals(item.PropertyType.BaseType.Name.ToLower(), "enum") && !_messages.Contains(item.PropertyType.Name))
-                {
-                    GeneralEnumCode(item.PropertyType);
-                    _messages.Add(item.PropertyType.Name);
-                }
-
-                if (item.PropertyType.IsClass && item.PropertyType.GetCustomAttribute<ProtoContractAttribute>() != null)
-                {
-                    refenceCode.AppendLine(GenerateProtoMessageCode(item.PropertyType));
-                }
-                if (item.PropertyType.IsArray && item.PropertyType.GetElementType().GetCustomAttribute<ProtoContractAttribute>() != null)
-                {
-                    refenceCode.AppendLine(GenerateProtoMessageCode(item.PropertyType.GetElementType()));
-                }
-            }
-            _messages.Add(messageType.Name);
-            return messageCode.Append("}\n\n").Append(enumCode).Append(refenceCode).ToString();
-
-            string GetFiledType(Type type)
-            {
-                switch (type.Name.ToLower())
-                {
-                    case "bool":
-                        return "bool";
-                    case "boolean":
-                        return "bool";
-                    case "datetime":
-                        return "bcl.DateTime";
-                    case "double":
-                        return "double";
-                    case "float":
-                        return "float";
-                    case "int":
-                        return "int32";
-                    case "int32":
-                        return "int32";
-                    case "int64":
-                        return "int64";
-                    case "long":
-                        return "int64";
-                    case "string":
-                        return "string";
-                    case "byte[]":
-                        return "bytes";
-                    default:
-                        if (type.Name.Contains("[]"))
-                            return $"repeated {GetFiledType(type.GetElementType())}";
-                        return type.Name;
-                }
-            }
-
-            void GeneralEnumCode(Type type)
-            {
-                var zeroCode = "\tZERO = 0;";
-                var enumFiledCode = new StringBuilder();
-                var hasDefault = false;
-                foreach (var item in type.GetFields())
-                {
-                    if (item.Name.Equals("value__")) continue;
-                    var values = (int)item.GetValue(null);
-                    if (values <= 0) hasDefault = true;
-                    enumFiledCode.AppendLine($"\t{item.Name} = {values};");
-                }
-                if (hasDefault) enumCode.Append($"enum {type.Name}{{\n{enumFiledCode}}}\n");
-                else enumCode.Append($"enum {type.Name}{{\n{zeroCode}\n{enumFiledCode}}}\n");
-            }
+            var p= GetProto(messageType);
+            _messages.AddRange(p.Types);
+            return p.Proto;
         }
 
         private static RpcMethodReturnType GetMethodReturn(MethodInfo method)
@@ -380,5 +296,53 @@ namespace Kadder
             }
             return name;
         }
+
+        private (string Proto,List<string> Types) GetProto(Type type)
+        {
+            var p=RuntimeTypeModel.Default.GetSchema(type,ProtoSyntax.Proto3);
+            var arr=p.Split('\n');
+            var proto=new StringBuilder();
+            var types=new List<string>();
+            var currentType=string.Empty;
+            var isEnum=false;
+            var isContent=false;
+            for(var i=0;i<arr.Length;i++)
+            {
+                var item =arr[i];
+                if(item.StartsWith("syntax ")||item.StartsWith("package ")||item.StartsWith("import "))
+                {
+                    continue;
+                }
+                if(item.StartsWith("message"))
+                {
+                    currentType=item.Replace("message", "").Replace("{", "").Replace(" ", "");
+                    isContent=true;
+                }
+                if(item.StartsWith("enum"))
+                {
+                    currentType=item.Replace("enum", "").Replace("{", "").Replace(" ", "");
+                    isEnum=true;
+                    isContent=true;
+                }
+                if(isContent&&_messages.Contains(currentType))
+                {
+                    continue;
+                }
+                if(item.EndsWith("}"))
+                {
+                    isContent=false;
+                    isEnum=false;
+                }
+                if(isEnum&&!item.Contains("{"))
+                {
+                    var key=item.Replace(" ", "").Split('=')[0];
+                    item=item.Replace(key, $"{currentType}_{key}");
+                }
+                types.Add(currentType);
+                proto.AppendLine(item);
+            }
+            return (proto.ToString(),types);
+        }
+
     }
 }
