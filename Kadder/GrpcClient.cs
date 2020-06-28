@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Atlantis.Common.CodeGeneration;
+using GenAssembly;
 using Grpc.Core;
 using Grpc.Core.Interceptors;
 using Kadder.Utilies;

@@ -1,6 +1,6 @@
 using System;
 using System.Threading.Tasks;
-using Atlantis.Common.CodeGeneration;
+using GenAssembly;
 using Kadder.Middlewares;
 using Kadder.Utilies;
 using Microsoft.Extensions.DependencyInjection;

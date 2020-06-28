@@ -1,11 +1,10 @@
-using Atlantis.Common.CodeGeneration;
-using Atlantis.Common.CodeGeneration.Descripters;
+using GenAssembly;
+using GenAssembly.Descripters;
 using Grpc.Core;
 using Kadder.CodeGeneration;
 using Kadder.Messaging;
 using Kadder.Utilies;
 using Microsoft.Extensions.DependencyInjection;
-using ProtoBuf;
 using ProtoBuf.Meta;
 using System;
 using System.Collections.Generic;
