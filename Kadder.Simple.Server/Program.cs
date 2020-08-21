@@ -2,44 +2,47 @@ using System;
 using System.Threading.Tasks;
 using Kadder.Middlewares;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
 namespace Kadder.Simple.Server
 {
     class Program
     {
-        static void Main(string[] args)
+        static async Task Main(string[] args)
         {
             Console.WriteLine(Environment.CurrentDirectory);
-            
-            var services=new ServiceCollection();
-            services.AddLogging();
-            services.AddKadderGrpcServer(builder =>
-            {
-                builder.Options = new GrpcServerOptions()
-                {
-                    Host = "127.0.0.1",
-                    Port = 3002,
-                    NamespaceName = "Atlantis.Simple",
-                    ServiceName = "AtlantisService",
-                    // ScanAssemblies = new string[]
-                    // {
-                    //     typeof(Program).Assembly.FullName
-                    // }
-                };
-                Console.WriteLine(builder.Options.ScanAssemblies[0]);
-                builder.AddInterceptor<LoggerInterceptor>();
-            });
-            services.AddScoped<IPersonMessageServicer, PersonMessageServicer>();
-            services.AddScoped<IAnimalMessageServicer, AnimalMessageServicer>();
-            services.AddScoped<ImplServicer>();
-            services.AddScoped<AttributeServicer>();
-            services.AddScoped<EndwidthKServicer>();
 
-            var provider = services.BuildServiceProvider();
-            provider.StartKadderGrpc();
+            var host=new Microsoft.Extensions.Hosting.HostBuilder()
+                .ConfigureServices((context,services)=>{
+                    services.AddLogging();
+                    services.AddKadderGrpcServer(builder =>
+                    {
+                        builder.Options = new GrpcServerOptions()
+                            {
+                                Host = "0.0.0.0",
+                                Port = 3002,
+                                NamespaceName = "Atlantis.Simple",
+                                ServiceName = "AtlantisService",
+                                // ScanAssemblies = new string[]
+                                // {
+                                //     typeof(Program).Assembly.FullName
+                                // }
+                            };
+                        Console.WriteLine(builder.Options.ScanAssemblies[0]);
+                        builder.AddInterceptor<LoggerInterceptor>();
+                    });
+                    services.AddScoped<IPersonMessageServicer, PersonMessageServicer>();
+                    services.AddScoped<IAnimalMessageServicer, AnimalMessageServicer>();
+                    services.AddScoped<INumberMessageServicer, NumberMessageServicer>();
+                    services.AddScoped<ImplServicer>();
+                    services.AddScoped<AttributeServicer>();
+                    services.AddScoped<EndwidthKServicer>();
 
-            Console.WriteLine("Server is running...");
-            Console.ReadLine();
+                    Console.WriteLine("Server is running...");
+                }).Build();
+
+            host.Services.StartKadderGrpc();
+            await host.RunAsync();
         }
     }
 

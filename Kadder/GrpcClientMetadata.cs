@@ -15,7 +15,7 @@ namespace Kadder
 
         public IList<Type> PrivateInterceptors { get; set; }
 
-        public GrpcClientOptions Options { get; set; }
+        public GrpcClientOptions Options { get; set; } 
 
         public GrpcClientMetadata RegInterceptor<T>() where T : Interceptor
         {

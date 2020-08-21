@@ -26,8 +26,7 @@ namespace Kadder
         private int _connecting = 0;
         private bool _isConnected=false;
 
-        public GrpcClient(
-            GrpcClientMetadata metadata, GrpcClientBuilder builder, GrpcServiceCallBuilder serviceCallBuilder)
+        public GrpcClient(GrpcClientMetadata metadata, GrpcClientBuilder builder, GrpcServiceCallBuilder serviceCallBuilder)
         {
             _clientBuilder = builder;
             _metadata = metadata;
@@ -65,56 +64,30 @@ namespace Kadder
             }
         }
 
-        public virtual async Task<TResponse> CallAsync<TRequest, TResponse>(
-            TRequest request, string methodName, string serviceName)
+        public virtual async Task<TResponse> CallAsync<TRequest, TResponse>(TRequest request, string methodName, string serviceName)
             where TRequest : class
             where TResponse : class
         {
             var name = $"{serviceName}{methodName}";
             try
             {
-                if (_oldMethodDic.ContainsKey(name))
-                {
-                    Log.LogWarning($"ServiceCall has call old version. Name[{name}]");
-                    var response = await CallForOldVersionAsync<TRequest, TResponse>(request, methodName);
-                    return response;
-                }
-                var response1 = await DoCallAsync<TRequest, TResponse>(request, methodName, serviceName);
-                return response1;
+                var response = await DoCallAsync<TRequest, TResponse>(request, methodName, serviceName);
+                return response;
             }
             catch (Exception ex)
             {
                 RpcException rpcException;
-                if (!ex.EatException<RpcException>(out rpcException) || rpcException.Status.StatusCode != StatusCode.Unimplemented)
+                if (ex.EatException<RpcException>(out rpcException))
                 {
-                    throw ex;
+                    throw rpcException;
                 }
-                Log.LogWarning($"ServiceCall has call old version. Name[{name}]");
-                var response = await CallForOldVersionAsync<TRequest, TResponse>(request, methodName);
-                if (!_oldMethodDic.Keys.Contains(name))
-                {
-                    _oldMethodDic.Add(name, name);
-                }
-                return response;
+                throw ex;
             }
         }
 
-        /// <summary>
-        /// Support old version 0.0.6 and before version
-        /// </summary>
-        /// <param name="request"></param>
-        /// <param name="methodName"></param>
-        /// <typeparam name="TRequest"></typeparam>
-        /// <typeparam name="TResponse"></typeparam>
-        /// <returns></returns>
-        public virtual Task<TResponse> CallForOldVersionAsync<TRequest, TResponse>(
-            TRequest request, string methodName) where TRequest : class where TResponse : class
-        {
-            return DoCallAsync<TRequest, TResponse>(request, methodName, _options.ServiceName);
-        }
-
-        protected virtual async Task<TResponse> DoCallAsync<TRequest, TResponse>(
-            TRequest request, string methodName, string serviceName) where TRequest : class where TResponse : class
+        protected virtual async Task<TResponse> DoCallAsync<TRequest, TResponse>(TRequest request, string methodName, string serviceName)
+            where TRequest : class
+            where TResponse : class
         {
             if (string.IsNullOrWhiteSpace(methodName))
             {
@@ -132,8 +105,9 @@ namespace Kadder
             return await InvokeAsync(method, $"{_options.Host}:{_options.Port}", request);
         }
 
-        private async Task<TResponse> InvokeAsync<TRequest, TResponse>(
-            Method<TRequest, TResponse> method, string host, TRequest request) where TRequest : class where TResponse : class
+        private async Task<TResponse> InvokeAsync<TRequest, TResponse>(Method<TRequest, TResponse> method, string host, TRequest request)
+            where TRequest : class
+            where TResponse : class
         {
             try
             {
@@ -190,6 +164,7 @@ namespace Kadder
             Console.WriteLine("connect");
             try
             {
+               
                 _channel = new Channel(_options.Host, _options.Port, ChannelCredentials.Insecure);
                 await _channel.ConnectAsync(DateTime.UtcNow.AddSeconds(_metadata.Options.ConnectSecondTimeout));
                 _isConnected=true;

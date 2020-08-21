@@ -17,8 +17,8 @@ namespace Atlantis.Grpc.Simple.Client
         {
             var options = new GrpcClientOptions()
             {
-                Host = "127.0.0.1",
-                Port = 3002,
+                Host = "svc-kadder-server",
+                Port = 80,
                 NamespaceName = "Atlantis.Simple",
                 ServiceName = "AtlantisService",
                 ScanAssemblies = new string[]
@@ -38,10 +38,12 @@ namespace Atlantis.Grpc.Simple.Client
 
             var provider = services.BuildServiceProvider();
             provider.ApplyKadderGrpcClient();
-            var log=provider.GetService<ILogger<GrpcClient>>();
+            var log = provider.GetService<ILogger<GrpcClient>>();
             log.LogInformation("dd");
-            
-            TestInterceptor(provider);
+
+            // TestInterceptor(provider);
+
+            TestNumber(provider);
 
             Console.ReadLine();
 
@@ -71,6 +73,16 @@ namespace Atlantis.Grpc.Simple.Client
         //     };
         //     var response = service.GetImageTagsByUrlAsync(request);
         // }
+
+        static void TestNumber(ServiceProvider provider)
+        {
+            var i = 0;
+            var servicer = provider.GetService<INumberMessageServicer>();
+            while (true)
+            {
+                servicer.PrintAsync(new NumberMessage { Number = i++ }).Wait();
+            }
+        }
 
         static void TestParallel(ServiceProvider provider)
         {
@@ -108,10 +120,10 @@ namespace Atlantis.Grpc.Simple.Client
                     {
                         try
                         {
-                        var resuslt = servicer.HelloAsync().Result;
-                        Console.WriteLine(resuslt.Result);
+                            var resuslt = servicer.HelloAsync().Result;
+                            Console.WriteLine(resuslt.Result);
                         }
-                        catch(Exception ex)
+                        catch (Exception ex)
                         {
                             Console.WriteLine(ex.ToString());
                         }

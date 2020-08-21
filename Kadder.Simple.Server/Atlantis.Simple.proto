@@ -27,31 +27,46 @@ service ImplServicer {
 rpc Hello(EmptyMessage) returns(EmptyMessageResult);
 
 }
+service INumberMessageServicer {
+
+rpc Print(NumberMessage) returns(EmptyMessageResult);
+
+}
 service IPersonMessageServicer {
 
 rpc Hello(EmptyMessage) returns(HelloMessageResult);
 
 }
 
+
 message HelloMessage {
-	string Age = 1;
-	string Nad = 2;
-	string Name = 3;
-	string Nams = 4;
-	string Sex = 5;
+   string Age = 1;
+   string Nad = 2;
+   string Name = 3;
+   string Nams = 4;
+   string Sex = 5;
 }
+
 
 
 message HelloMessageResult {
-	string Result = 1;
+   string Result = 1;
 }
+
 
 
 message EmptyMessage {
 }
 
 
+
 message EmptyMessageResult {
+}
+
+
+
+message NumberMessage {
+   int32 Number = 1;
 }
 
 
