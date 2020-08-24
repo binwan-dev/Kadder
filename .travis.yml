@@ -1,6 +1,6 @@
 language: csharp
 solution: Kadder.sln
-dotnet: 2.2.401
+dotnet: 3.1.107
 script:
   - dotnet restore
   - dotnet build    
