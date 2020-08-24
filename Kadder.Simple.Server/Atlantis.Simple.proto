@@ -27,6 +27,11 @@ service ImplServicer {
 rpc Hello(EmptyMessage) returns(EmptyMessageResult);
 
 }
+service JsonMessageKServicer {
+
+rpc Hello(JsonMessage) returns(JsonMessageResult);
+
+}
 service INumberMessageServicer {
 
 rpc Print(NumberMessage) returns(EmptyMessageResult);
@@ -61,6 +66,16 @@ message EmptyMessage {
 
 
 message EmptyMessageResult {
+}
+
+
+
+message JsonMessage {
+}
+
+
+
+message JsonMessageResult {
 }
 
 

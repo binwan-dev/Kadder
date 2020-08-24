@@ -39,6 +39,7 @@ namespace Kadder.Simple.Server
                         };
                         Console.WriteLine(builder.Options.ScanAssemblies[0]);
                         builder.AddInterceptor<LoggerInterceptor>();
+                        builder.BinarySerializer=new JsonBinarySerializer();
                     });
                     services.AddScoped<IPersonMessageServicer, PersonMessageServicer>();
                     services.AddScoped<IAnimalMessageServicer, AnimalMessageServicer>();

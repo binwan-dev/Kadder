@@ -33,6 +33,7 @@ namespace Atlantis.Grpc.Simple.Client
             services.AddKadderGrpcClient(builder =>
             {
                 builder.RegClient(options);
+                builder.BinarySerializer=new JsonBinarySerializer();
                 //builder.RegShareInterceptor<Kadder.Simple.Client.LoggerInterceptor>();
             });
 
@@ -41,9 +42,13 @@ namespace Atlantis.Grpc.Simple.Client
             var log = provider.GetService<ILogger<GrpcClient>>();
             log.LogInformation("dd");
 
+            TestJson(provider);
+
+            // TestEndwith(provider);
+
             // TestInterceptor(provider);
 
-            TestNumber(provider);
+            // TestNumber(provider);
 
             Console.ReadLine();
 
@@ -62,6 +67,18 @@ namespace Atlantis.Grpc.Simple.Client
             // // {
             // //     Console.Write($" {b}");
             // }
+        }
+
+        static void TestJson(ServiceProvider provider)
+        {
+            var servicer = provider.GetService<JsonMessageKServicer>();
+            Console.WriteLine(servicer.HelloAsync(new JsonMessage { Name = "felix", Age = 1 }).Result.HelloContent);
+        }
+
+        static void TestEndwith(ServiceProvider provider)
+        {
+            var servicer = provider.GetService<EndwidthKServicer>();
+            Console.WriteLine(servicer.HelloAsync());
         }
 
         // static void TestAI(ServiceProvider provider)
@@ -84,7 +101,7 @@ namespace Atlantis.Grpc.Simple.Client
                 {
                     servicer.PrintAsync(new NumberMessage { Number = i++ }).Wait();
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
                     Console.WriteLine(ex.Message);
                 }
