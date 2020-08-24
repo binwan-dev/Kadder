@@ -17,7 +17,7 @@ namespace Atlantis.Grpc.Simple.Client
         {
             var options = new GrpcClientOptions()
             {
-                Host = "svc-kadder-server",
+                Host = "127.0.0.1:3002;127.0.0.1:3003",
                 Port = 80,
                 NamespaceName = "Atlantis.Simple",
                 ServiceName = "AtlantisService",
@@ -80,7 +80,14 @@ namespace Atlantis.Grpc.Simple.Client
             var servicer = provider.GetService<INumberMessageServicer>();
             while (true)
             {
-                servicer.PrintAsync(new NumberMessage { Number = i++ }).Wait();
+                try
+                {
+                    servicer.PrintAsync(new NumberMessage { Number = i++ }).Wait();
+                }
+                catch(Exception ex)
+                {
+                    Console.WriteLine(ex.Message);
+                }
             }
         }
 

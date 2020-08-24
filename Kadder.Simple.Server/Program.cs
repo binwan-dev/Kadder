@@ -11,23 +11,32 @@ namespace Kadder.Simple.Server
         static async Task Main(string[] args)
         {
             Console.WriteLine(Environment.CurrentDirectory);
+            var ip = "127.0.0.1";
+            var port = 3002;
+            if (args.Length > 0)
+            {
+                var arr = args[0].Split(':');
+                ip = arr[0];
+                port = int.Parse(arr[1]);
+            }
 
-            var host=new Microsoft.Extensions.Hosting.HostBuilder()
-                .ConfigureServices((context,services)=>{
+            var host = new Microsoft.Extensions.Hosting.HostBuilder()
+                .ConfigureServices((context, services) =>
+                {
                     services.AddLogging();
                     services.AddKadderGrpcServer(builder =>
                     {
                         builder.Options = new GrpcServerOptions()
-                            {
-                                Host = "0.0.0.0",
-                                Port = 3002,
-                                NamespaceName = "Atlantis.Simple",
-                                ServiceName = "AtlantisService",
-                                // ScanAssemblies = new string[]
-                                // {
-                                //     typeof(Program).Assembly.FullName
-                                // }
-                            };
+                        {
+                            Host = ip,
+                            Port = port,
+                            NamespaceName = "Atlantis.Simple",
+                            ServiceName = "AtlantisService",
+                            // ScanAssemblies = new string[]
+                            // {
+                            //     typeof(Program).Assembly.FullName
+                            // }
+                        };
                         Console.WriteLine(builder.Options.ScanAssemblies[0]);
                         builder.AddInterceptor<LoggerInterceptor>();
                     });

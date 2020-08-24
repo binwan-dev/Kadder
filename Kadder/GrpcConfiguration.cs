@@ -9,33 +9,36 @@ namespace Kadder
 {
     public static class GrpcConfiguration
     {
-        public static IServiceCollection AddKadderGrpcClient(
-            this IServiceCollection services, Action<GrpcClientBuilder> builderAction)
+        public static IServiceCollection AddKadderGrpcClient(this IServiceCollection services, Action<GrpcClientBuilder> builderAction)
         {
             var builder = new GrpcClientBuilder();
             builderAction(builder);
 
-            var serviceCallBuilder = new GrpcServiceCallBuilder();
             services.AddSingleton(builder);
-            services.AddSingleton(serviceCallBuilder);
             services.RegSerializer(null, builder.BinarySerializer);
 
-            foreach(var interceptor in builder.Interceptors)
+            if (builder.Strategy == null) builder.Strategy = new RoundRobinStrategy();
+            services.AddSingleton<IGrpcClientStrategy>(builder.Strategy);
+
+            foreach (var interceptor in builder.Interceptors)
             {
                 services.AddSingleton(interceptor);
             }
 
             foreach (var clientMetadata in builder.ClientMetadatas)
             {
-                var grpcClient = new GrpcClient(clientMetadata,builder, serviceCallBuilder);
-                foreach(var interceptor in clientMetadata.PrivateInterceptors)
+                clientMetadata.PublicInterceptors = builder.Interceptors;
+
+                var client = new GrpcClient(clientMetadata, builder.Strategy);
+                foreach (var interceptor in clientMetadata.PrivateInterceptors)
                 {
                     services.AddSingleton(interceptor);
                 }
-                foreach (var item in grpcClient.GrpcServiceDic)
+                foreach (var callType in clientMetadata.GenerationCallTypes)
                 {
-                    services.AddSingleton(item.Key, item.Value);
+                    services.AddSingleton(callType.Key, callType.Value);
                 }
+                GrpcClient.ClientDic.Add(clientMetadata.ID.ToString(), client);
             }
 
             return services;
@@ -47,8 +50,7 @@ namespace Kadder
             return provider;
         }
 
-        public static IServiceCollection AddKadderGrpcServer(
-            this IServiceCollection services, Action<GrpcServerBuilder> builderAction)
+        public static IServiceCollection AddKadderGrpcServer(this IServiceCollection services, Action<GrpcServerBuilder> builderAction)
         {
             var builder = new GrpcServerBuilder();
             builderAction(builder);
@@ -68,12 +70,12 @@ namespace Kadder
             }
 
             var namespaces = "Kadder.CodeGeneration";
-            var codeBuilder = new CodeBuilder(namespaces, namespaces); 
-            var grpcClasses = serviceBuilder.GenerateGrpcProxy(builder.Options, codeBuilder); 
+            var codeBuilder = new CodeBuilder(namespaces, namespaces);
+            var grpcClasses = serviceBuilder.GenerateGrpcProxy(builder.Options, codeBuilder);
             // var proxyCode = serviceBuilder.GenerateHandlerProxy(builder.Options.GetScanAssemblies(), codeBuilder);
             var codeAssembly = codeBuilder.BuildAsync().Result;
-           
-            foreach(var grpcClass in grpcClasses)
+
+            foreach (var grpcClass in grpcClasses)
             {
                 namespaces = $"{grpcClass.Namespace}.{grpcClass.Name}";
                 var grpcType = codeAssembly.Assembly.GetType(namespaces);
@@ -86,7 +88,7 @@ namespace Kadder
         }
 
         public static IServiceProvider StartKadderGrpc(this IServiceProvider provider)
-        {   
+        {
             GrpcServerBuilder.ServiceProvider = provider;
             var server = provider.GetService<GrpcServer>();
             server.Start();

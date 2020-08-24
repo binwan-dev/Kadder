@@ -1,5 +1,3 @@
-using System;
-
 namespace Kadder
 {
     public class GrpcClientOptions : GrpcOptions
@@ -7,16 +5,16 @@ namespace Kadder
         public GrpcClientOptions()
         {
             ConnectSecondTimeout = 10;
-            KeepLive=true;
+            KeepLive = true;
         }
-        
-        public GrpcClientOptions(GrpcOptions options):this()
+
+        public GrpcClientOptions(GrpcOptions options) : this()
         {
-            Host=options.Host;
-            Port=options.Port;
+            Host = options.Host;
+            Port = options.Port;
             NamespaceName = options.NamespaceName;
-            ServiceName=options.ServiceName;
-            ScanAssemblies=options.ScanAssemblies;
+            ServiceName = options.ServiceName;
+            ScanAssemblies = options.ScanAssemblies;
         }
 
         /// <summary>
@@ -28,5 +26,8 @@ namespace Kadder
         /// Keep connect live
         /// </summary>
         public bool KeepLive { get; set; }
+
+        public string Strategy { get; set; }
+        
     }
 }

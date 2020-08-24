@@ -15,6 +15,8 @@ namespace Kadder
 
         public IList<GrpcClientMetadata> ClientMetadatas { get; private set; }
 
+        public IGrpcClientStrategy Strategy { get; set; }
+
         public GrpcClientBuilder()
         {
             Interceptors = new List<Type>();
@@ -26,7 +28,7 @@ namespace Kadder
         {
             return RegClient(new GrpcClientOptions(options));
         }
-        
+
         public GrpcClientMetadata RegClient(GrpcClientOptions options)
         {
             var metadata = new GrpcClientMetadata(options);
@@ -37,6 +39,12 @@ namespace Kadder
         public GrpcClientBuilder RegShareInterceptor<T>() where T : Interceptor
         {
             Interceptors.Add(typeof(T));
+            return this;
+        }
+
+        public GrpcClientBuilder UseRoundRobinStrategy()
+        {
+            Strategy = new RoundRobinStrategy();
             return this;
         }
     }

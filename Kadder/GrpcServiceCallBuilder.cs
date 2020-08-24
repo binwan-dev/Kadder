@@ -12,8 +12,7 @@ namespace Kadder
 {
     public class GrpcServiceCallBuilder
     {
-        public IDictionary<Type, string> GenerateHandler(
-            GrpcOptions options, GrpcClient client, ref CodeBuilder codeBuilder)
+        public static IDictionary<Type, string> GenerateHandler(GrpcOptions options, GrpcClientMetadata clientMetadata, ref CodeBuilder codeBuilder)
         {
             var types = options.GetKServicers();
             var grpcServiceDic = new Dictionary<Type, string>();
@@ -69,7 +68,7 @@ namespace Kadder
                     var methodDescripter = new MethodDescripter(method.Name, true)
                         .SetAccess(AccessType.Public)
                         .SetReturn(returnTypeCode)
-                        .AppendCode($@"var client = GrpcClientExtension.ClientDic[""{client.ID.ToString()}""];")
+                        .AppendCode($@"var client = GrpcClient.ClientDic[""{clientMetadata.ID.ToString()}""];")
                         .AppendCode($@"{returnCode}await client.CallAsync<{parameters[0].ParameterType.Name},{responseType.Name}>({requestCode}, ""{methodName}"", ""{typeService.Name}"");");
                     if (!parameters[0].IsEmpty)
                     {
@@ -81,7 +80,7 @@ namespace Kadder
                 codeBuilder.CreateClass(classDescripter)
                     .AddAssemblyRefence(typeService.Assembly);
             }
-            codeBuilder.AddAssemblyRefence(this.GetType().Assembly);
+            codeBuilder.AddAssemblyRefence(typeof(GrpcServiceCallBuilder).Assembly);
             return grpcServiceDic;
         }
 
