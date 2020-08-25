@@ -5,7 +5,7 @@ namespace Kadder.Simple.Server
 {
     public class ImplServicer:KServicer
     {	
-    	public Task HelloAsync()
+    	public virtual Task HelloAsync()
         {
             Console.WriteLine("Hello, impl");
             return Task.CompletedTask;

@@ -14,21 +14,20 @@ namespace Kadder
             Middlewares = new List<Type>();
             Interceptors = new List<Type>();
             Services = new List<Type>();
+            BinarySerializer = new ProtobufBinarySerializer();
         }
-        
-        public GrpcServerOptions Options{get;set;}
 
-        public IJsonSerializer JsonSerializer{get;set;}
+        public GrpcServerOptions Options { get; set; }
 
-        public IBinarySerializer BinarySerializer{get;set;}
+        public IBinarySerializer BinarySerializer { get; set; }
 
-        internal IList<Type> Middlewares{get;private set;}
+        internal IList<Type> Middlewares { get; private set; }
 
         internal IList<Type> Interceptors { get; private set; }
 
         internal IList<Type> Services { get; private set; }
 
-        public static IServiceProvider ServiceProvider{get;set;}
+        public static IServiceProvider ServiceProvider { get; set; }
 
         public GrpcServerBuilder AddMiddleware<T>() where T : GrpcMiddlewareBase
         {
@@ -39,6 +38,12 @@ namespace Kadder
         public GrpcServerBuilder AddInterceptor<T>() where T : Interceptor
         {
             Interceptors.Add(typeof(T));
+            return this;
+        }
+
+        public GrpcServerBuilder UseTextJsonSerializer()
+        {
+            BinarySerializer = new TextJsonSerializer();
             return this;
         }
 

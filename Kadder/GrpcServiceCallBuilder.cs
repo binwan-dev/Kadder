@@ -37,6 +37,7 @@ namespace Kadder
                         classDescripter.CreateMember(GenerateNoGrpcMethod(method, classDescripter, codeBuilder));
                         continue;
                     }
+                    if (!typeService.IsInterface && !method.IsVirtual) throw new InvalidOperationException($"{typeService.FullName} is not interface, {method.Name} must be virtual method");
 
                     var parameters = RpcParameterInfo.Convert(method.GetParameters());
                     if (parameters.Count == 0)
@@ -52,7 +53,8 @@ namespace Kadder
 
                     var requestName = parameters[0].ParameterType.Name.ToLower();
                     var responseType = GetMethodReturn(method);
-                    var returnTypeCode = $"new Task<{responseType.Name}>";
+                    var returnTypeCode = $"Task<{responseType.Name}>";
+                    if (!typeService.IsInterface) returnTypeCode = $"override {returnTypeCode}";
                     var returnCode = "return ";
                     var requestCode = requestName;
                     if (parameters[0].IsEmpty)
@@ -77,8 +79,7 @@ namespace Kadder
                     classDescripter.CreateMember(methodDescripter)
                         .AddUsing(responseType.Namespace).AddUsing(parameters[0].ParameterType.Namespace);
                 }
-                codeBuilder.CreateClass(classDescripter)
-                    .AddAssemblyRefence(typeService.Assembly);
+                codeBuilder.CreateClass(classDescripter).AddAssemblyRefence(typeService.Assembly);
             }
             codeBuilder.AddAssemblyRefence(typeof(GrpcServiceCallBuilder).Assembly);
             return grpcServiceDic;
@@ -97,38 +98,38 @@ namespace Kadder
                 codeBuilder.AddAssemblyRefence(param.ParameterType.Assembly);
             }
             methodDescripter.SetParams(parameterDescripters.ToArray());
-            
+
             return methodDescripter;
 
             string GetReturnName(Type type)
             {
                 codeBuilder.AddAssemblyRefence(type.Assembly);
 
-                if(type.IsGenericType)
+                if (type.IsGenericType)
                 {
-                    var typeName=$"{type.FullName.Split('`')[0]}<";
-                    foreach(var itemType in type.GenericTypeArguments)
+                    var typeName = $"{type.FullName.Split('`')[0]}<";
+                    foreach (var itemType in type.GenericTypeArguments)
                     {
-                        typeName+=$"{GetReturnName(itemType)},";
+                        typeName += $"{GetReturnName(itemType)},";
                     }
-                    return $"{typeName.Remove(typeName.Length-1)}>";
+                    return $"{typeName.Remove(typeName.Length - 1)}>";
                 }
-                else if(type.IsValueType||type.Name.StartsWith("String"))
+                else if (type.IsValueType || type.Name.StartsWith("String"))
                 {
-                    switch(type.Name)
+                    switch (type.Name)
                     {
-                        case "Int16" :return "short";
-                        case "Int32" :return "int";
-                        case "Int64" :return "long";
-                        case "UInt16" :return "ushort";
-                        case "UInt32" :return "uint";
-                        case "UInt64" :return "ulong";
-                        case "String" :return "string";
-                        case "Double":return "double";
-                        case "Single":return "float";
-                        case "Decimal":return "decimal";
-                        case "Boolean":return "bool";
-                        default:return string.Empty;
+                        case "Int16": return "short";
+                        case "Int32": return "int";
+                        case "Int64": return "long";
+                        case "UInt16": return "ushort";
+                        case "UInt32": return "uint";
+                        case "UInt64": return "ulong";
+                        case "String": return "string";
+                        case "Double": return "double";
+                        case "Single": return "float";
+                        case "Decimal": return "decimal";
+                        case "Boolean": return "bool";
+                        default: return string.Empty;
                     }
                 }
                 else

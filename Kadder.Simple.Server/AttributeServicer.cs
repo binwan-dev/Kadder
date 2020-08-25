@@ -7,7 +7,7 @@ namespace Kadder.Simple.Server
     [KServicer]
     public class AttributeServicer
     {   
-        public Task HelloAsync()
+        public virtual Task HelloAsync()
         {
             Console.WriteLine("Hello, attribute");
             return Task.CompletedTask;

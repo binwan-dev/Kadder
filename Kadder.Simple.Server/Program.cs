@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using Kadder.Middlewares;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 
 namespace Kadder.Simple.Server
 {
@@ -21,10 +22,14 @@ namespace Kadder.Simple.Server
             }
 
             var host = new Microsoft.Extensions.Hosting.HostBuilder()
+                .ConfigureLogging(builder=>
+                {
+                    builder.AddConsole();
+                })
                 .ConfigureServices((context, services) =>
                 {
                     services.AddLogging();
-                    services.AddKadderGrpcServer(builder =>
+                    services.AddKadderServer(builder =>
                     {
                         builder.Options = new GrpcServerOptions()
                         {
@@ -32,6 +37,7 @@ namespace Kadder.Simple.Server
                             Port = port,
                             NamespaceName = "Atlantis.Simple",
                             ServiceName = "AtlantisService",
+                            IsGeneralProtoFile=false
                             // ScanAssemblies = new string[]
                             // {
                             //     typeof(Program).Assembly.FullName
@@ -39,11 +45,12 @@ namespace Kadder.Simple.Server
                         };
                         Console.WriteLine(builder.Options.ScanAssemblies[0]);
                         builder.AddInterceptor<LoggerInterceptor>();
-                        builder.BinarySerializer=new JsonBinarySerializer();
+                        builder.UseTextJsonSerializer();
                     });
                     services.AddScoped<IPersonMessageServicer, PersonMessageServicer>();
                     services.AddScoped<IAnimalMessageServicer, AnimalMessageServicer>();
                     services.AddScoped<INumberMessageServicer, NumberMessageServicer>();
+                    services.AddScoped<JsonMessageKServicer>();
                     services.AddScoped<ImplServicer>();
                     services.AddScoped<AttributeServicer>();
                     services.AddScoped<EndwidthKServicer>();
@@ -51,7 +58,7 @@ namespace Kadder.Simple.Server
                     Console.WriteLine("Server is running...");
                 }).Build();
 
-            host.Services.StartKadderGrpc();
+            host.Services.StartKadderServer();
             await host.RunAsync();
         }
     }

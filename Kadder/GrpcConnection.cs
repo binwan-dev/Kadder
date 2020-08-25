@@ -20,9 +20,11 @@ namespace Kadder
         private ILogger<GrpcClient> _log;
         private DateTime _lastConnectedTime;
         private int _connecting = 0;
+        private int _reconnecting = 0;
         private bool _isConnected = false;
         private readonly RpcHost _host;
         private readonly Guid _id;
+        private readonly int _reconnectWaitMaxSecond = 60;
 
         public GrpcConnection(GrpcClientMetadata metadata, RpcHost host)
         {
@@ -70,6 +72,35 @@ namespace Kadder
             return _grpcInvoker;
         }
 
+        public async void ConnectionBrokenAsync(IGrpcClientStrategy strategy)
+        {
+            if (!_metadata.Options.AutoConnect) return;
+            if (Interlocked.CompareExchange(ref _reconnecting, 1, 0) == 1) return;
+
+            var sleepSeconds = 1;
+            _isConnected = false;
+            while (true)
+            {
+                try
+                {
+                    Log.LogInformation($"Reconnecting to ${_host.ToString()}");
+                    await CreateChannelAsync();
+                }
+                catch (Exception ex)
+                {
+                    Log.LogError(ex, "connect to ${_host.ToString()} failed!");
+                }
+
+                if (_isConnected) break;
+                if (sleepSeconds > _reconnectWaitMaxSecond) sleepSeconds = 1;
+                Thread.Sleep((int)Math.Pow(2, sleepSeconds));
+                sleepSeconds++;
+            }
+
+            strategy.AddConn(this);
+            _reconnecting = 0;
+        }
+
         protected async virtual Task<Channel> CreateChannelAsync()
         {
             while (!(Interlocked.CompareExchange(ref _connecting, 1, 0) == 0))
@@ -90,7 +121,7 @@ namespace Kadder
             }
             catch (TaskCanceledException)
             {
-                throw new RpcException(new Status(StatusCode.Aborted, ""), $"Faild connect {_channel.Target}");
+                throw new RpcException(new Status(StatusCode.Unavailable, ""), $"Faild connect {_channel.Target}");
             }
             catch (Exception ex)
             {

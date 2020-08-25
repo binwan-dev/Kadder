@@ -30,15 +30,15 @@ namespace Atlantis.Grpc.Simple.Client
             IServiceCollection services = new ServiceCollection();
             services.AddLogging(b => b.AddConsole());
             services.AddTransient(typeof(ILogger<>), typeof(NullLogger<>));
-            services.AddKadderGrpcClient(builder =>
+            services.AddKadderClient(builder =>
             {
                 builder.RegClient(options);
-                builder.BinarySerializer=new JsonBinarySerializer();
+                builder.UseTextJsonSerializer();
                 //builder.RegShareInterceptor<Kadder.Simple.Client.LoggerInterceptor>();
             });
 
             var provider = services.BuildServiceProvider();
-            provider.ApplyKadderGrpcClient();
+            provider.UseKadderClient();
             var log = provider.GetService<ILogger<GrpcClient>>();
             log.LogInformation("dd");
 
@@ -71,8 +71,20 @@ namespace Atlantis.Grpc.Simple.Client
 
         static void TestJson(ServiceProvider provider)
         {
-            var servicer = provider.GetService<JsonMessageKServicer>();
-            Console.WriteLine(servicer.HelloAsync(new JsonMessage { Name = "felix", Age = 1 }).Result.HelloContent);
+            while (true)
+            {
+                try
+                {
+                    System.Threading.Thread.Sleep(1000);
+                    var servicer = provider.GetService<JsonMessageKServicer>();
+                    Console.WriteLine(servicer.GetType().FullName);
+                    Console.WriteLine(servicer.HelloAsync(new JsonMessage { Name = "felix", Age = 1 }).Result.HelloContent);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex.Message);
+                }
+            }
         }
 
         static void TestEndwith(ServiceProvider provider)
@@ -105,6 +117,7 @@ namespace Atlantis.Grpc.Simple.Client
                 {
                     Console.WriteLine(ex.Message);
                 }
+                System.Threading.Thread.Sleep(1000);
             }
         }
 

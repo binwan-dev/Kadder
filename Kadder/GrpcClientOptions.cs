@@ -5,7 +5,7 @@ namespace Kadder
         public GrpcClientOptions()
         {
             ConnectSecondTimeout = 10;
-            KeepLive = true;
+            AutoConnect = true;
         }
 
         public GrpcClientOptions(GrpcOptions options) : this()
@@ -22,12 +22,9 @@ namespace Kadder
         /// </summary>
         public int ConnectSecondTimeout { get; set; }
 
-        /// <summary>
-        /// Keep connect live
-        /// </summary>
-        public bool KeepLive { get; set; }
-
         public string Strategy { get; set; }
-        
+
+        public bool AutoConnect { get; set; }
+
     }
 }

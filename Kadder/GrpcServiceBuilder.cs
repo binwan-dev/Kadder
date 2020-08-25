@@ -19,10 +19,15 @@ namespace Kadder
     public class GrpcServiceBuilder
     {
         private List<string> _messages = new List<string>();
-        private Dictionary<string, string> _oldVersionGrpcMethods = new Dictionary<string, string>();
 
-        public List<ClassDescripter> GenerateGrpcProxy(GrpcServerOptions options, CodeBuilder codeBuilder = null)
+        public List<ClassDescripter> GenerateGrpcProxy(GrpcServerBuilder builder, CodeBuilder codeBuilder = null)
         {
+            var options=builder.Options;
+            if(builder.BinarySerializer.GetType()!=typeof(ProtobufBinarySerializer)&&builder.Options.IsGeneralProtoFile)
+            {
+                throw new InvalidOperationException("Current serializer is not protobuf, Options IsGeneralProtoFile must be false");
+            }
+            
             if (codeBuilder == null)
             {
                 codeBuilder = CodeBuilder.Default;
@@ -57,7 +62,6 @@ namespace Kadder
 
                     @class = GenerateGrpcMethod(@class, method, parameters[0], interfaces);
                     GenerateGrpcCallCode(method, parameters[0], options.NamespaceName, codeBuilder, ref bindServicesCode);
-                    GenerateGrpcCallCodeForOldVersion(method, parameters[0], options.NamespaceName, options.ServiceName, codeBuilder, ref bindServicesCode);
                     if (options.IsGeneralProtoFile)
                     {
                         GenerateProtoCode(method, parameters[0], ref protoServiceCode, ref protoMessageCode);
@@ -160,7 +164,8 @@ namespace Kadder
             Func<IMessageEnvelope, IServiceScope, Task<IMessageResultEnvelope>> handler = async (imsgEnvelope, scope) => 
             {{
                 var messageEnvelope = (MessageEnvelope<{messageName}>) imsgEnvelope;
-                {responseCode}await scope.ServiceProvider.GetService<{className}>().{method.Name}({requestCode});
+                var servicer = scope.ServiceProvider.GetService<{className}>() ?? throw new ArgumentNullException(typeof({className}).FullName);
+                {responseCode}await servicer.{method.Name}({requestCode});
                 return new MessageResultEnvelope<{messageResultName}>() {{ MessageResult = {setResponseCode} }};
             }};
             var resultEnvelope = await _messageServicer.ProcessAsync(grpcContext, handler);
@@ -198,41 +203,6 @@ namespace Kadder
             codeBuilder
                 .AddAssemblyRefence(parameter.ParameterType.Assembly)
                 .AddAssemblyRefence(GrpcServiceBuilder.GetMethodReturn(method).Assembly);
-        }
-
-        /// <summary>
-        /// Support version 0.0.6 before
-        /// </summary>
-        /// <param name="method"></param>
-        /// <param name="parameter"></param>
-        /// <param name="namespaceName"></param>
-        /// <param name="codeBuilder"></param>
-        /// <param name="bindServicesCode"></param>
-        private void GenerateGrpcCallCodeForOldVersion(MethodInfo method, RpcParameterInfo parameter, string namespaceName,
-            string serviceName, CodeBuilder codeBuilder, ref StringBuilder bindServicesCode)
-        {
-            var serviceDefName = $"{namespaceName}.{serviceName}";
-            var methodDefName=method.Name.Replace("Async", "");
-            var key=$"{serviceDefName}.{methodDefName}";
-            if (_oldVersionGrpcMethods.ContainsKey(key))
-            {
-                return;
-            }
-            bindServicesCode.AppendLine($@"
-                .AddMethod(new Method<{parameter.ParameterType.Name}, {GrpcServiceBuilder.GetMethodReturn(method).Name}>(
-                    MethodType.Unary,
-                    ""{serviceDefName}"",
-                    ""{methodDefName}"",
-                    new Marshaller<{parameter.ParameterType.Name}>(
-                        _binarySerializer.Serialize,
-                        _binarySerializer.Deserialize<{parameter.ParameterType.Name}>
-                    ),
-                    new Marshaller<{GrpcServiceBuilder.GetMethodReturn(method).Name}>(
-                        _binarySerializer.Serialize,
-                        _binarySerializer.Deserialize<{GrpcServiceBuilder.GetMethodReturn(method).Name}>)
-                    ),
-                    {method.Name.Replace("Async", "")})");
-            _oldVersionGrpcMethods.Add(key, key);
         }
 
         private void GenerateProtoCode(MethodInfo method, RpcParameterInfo parameter, ref StringBuilder protoServiceCode, ref StringBuilder protoMessageCode)

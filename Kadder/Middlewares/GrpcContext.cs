@@ -2,7 +2,6 @@ using System;
 using System.Threading.Tasks;
 using Grpc.Core;
 using Kadder.Messaging;
-using Kadder.Utilies;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Kadder.Middlewares
@@ -25,13 +24,6 @@ namespace Kadder.Middlewares
         internal Func<IMessageEnvelope, IServiceScope, Task<IMessageResultEnvelope>> Hander { get; set; }
 
         public ServerCallContext CallContext { get; }
-
-        [Obsolete("Please use 'Complete' method")]
-        public bool HasDone
-        {
-            get => IsDone;
-            set => IsDone = value;
-        }
 
         public bool IsDone { get; private set; }
 

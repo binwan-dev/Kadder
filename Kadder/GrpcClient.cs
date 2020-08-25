@@ -2,7 +2,6 @@ using System;
 using System.Threading.Tasks;
 using Grpc.Core;
 using Kadder.Utilies;
-using Microsoft.Extensions.DependencyInjection;
 using System.Collections.Generic;
 
 namespace Kadder
@@ -11,12 +10,14 @@ namespace Kadder
     {
         private readonly GrpcClientMetadata _metadata;
         private readonly IGrpcClientStrategy _strategy;
+        private readonly IBinarySerializer _serializer;
         public static IDictionary<string, GrpcClient> ClientDic = new Dictionary<string, GrpcClient>();
 
-        public GrpcClient(GrpcClientMetadata metadata, IGrpcClientStrategy strategy)
+        public GrpcClient(GrpcClientMetadata metadata, GrpcClientBuilder builder)
         {
             _metadata = metadata ?? throw new ArgumentNullException(nameof(metadata));
-            _strategy = strategy ?? throw new ArgumentNullException(nameof(metadata));
+            _strategy = builder.Strategy ?? throw new ArgumentNullException(nameof(builder.Strategy));
+            _serializer = metadata.Serializer == null ? builder.BinarySerializer : metadata.Serializer;
 
             AddConnToStrategy();
         }
@@ -27,11 +28,10 @@ namespace Kadder
             where TRequest : class where TResponse : class
         {
             if (string.IsNullOrWhiteSpace(methodName)) throw new RpcException(new Status(StatusCode.Unknown, "No target!"));
-            var serializer = GrpcClientBuilder.ServiceProvider.GetService<IBinarySerializer>();
             serviceName = $"{_metadata.Options.NamespaceName}.{serviceName}";
 
-            var requestMarshaller = new Marshaller<TRequest>(serializer.Serialize, serializer.Deserialize<TRequest>);
-            var responseMarshaller = new Marshaller<TResponse>(serializer.Serialize, serializer.Deserialize<TResponse>);
+            var requestMarshaller = new Marshaller<TRequest>(_serializer.Serialize, _serializer.Deserialize<TRequest>);
+            var responseMarshaller = new Marshaller<TResponse>(_serializer.Serialize, _serializer.Deserialize<TResponse>);
 
             var method = new Method<TRequest, TResponse>(MethodType.Unary, serviceName, methodName, requestMarshaller, responseMarshaller);
 
@@ -54,6 +54,7 @@ namespace Kadder
                 if (ex.EatException<RpcException>(out RpcException rpcException) && rpcException.Status.StatusCode == StatusCode.Unavailable)
                 {
                     _strategy.ConnectBroken(conn);
+                    conn.ConnectionBrokenAsync(_strategy);
                     throw rpcException;
                 }
                 throw ex;

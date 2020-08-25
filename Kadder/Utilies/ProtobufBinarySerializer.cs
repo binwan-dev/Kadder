@@ -1,18 +1,26 @@
 using System;
 using System.IO;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 using ProtoBuf;
+using Microsoft.Extensions.DependencyInjection;
+using System.Text.Json;
 
 namespace Kadder.Utilies
 {
     public class ProtobufBinarySerializer : IBinarySerializer
     {
-        private readonly ILogger<ProtobufBinarySerializer> _log;
+        private ILogger<ProtobufBinarySerializer> _log;
 
-        public ProtobufBinarySerializer(ILogger<ProtobufBinarySerializer> log)
+        public ILogger<ProtobufBinarySerializer> Log
         {
-            _log = log;
+            get
+            {
+                if (_log == null)
+                {
+                    _log = GrpcClientBuilder.ServiceProvider.GetService<ILogger<ProtobufBinarySerializer>>();
+                }
+                return _log;
+            }
         }
 
         public T Deserialize<T>(byte[] data)
@@ -26,7 +34,7 @@ namespace Kadder.Utilies
             }
             catch (Exception ex)
             {
-                _log.LogError(ex, $"Serialize failed! MsgName[{typeof(T).FullName}] Data[{JsonConvert.SerializeObject(data)}]");
+                Log.LogError(ex, $"Serialize failed! MsgName[{typeof(T).FullName}] Data[{JsonSerializer.Serialize(data)}]");
                 throw ex;
             }
         }
@@ -43,7 +51,7 @@ namespace Kadder.Utilies
             }
             catch (Exception ex)
             {
-                _log.LogError(ex, $"Serialize failed! MsgName[{typeof(T).FullName}] Data[{JsonConvert.SerializeObject(obj)}]");
+                Log.LogError(ex, $"Serialize failed! MsgName[{typeof(T).FullName}] Data[{JsonSerializer.Serialize(obj)}]");
                 throw ex;
             }
         }

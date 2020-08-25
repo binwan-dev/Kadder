@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging;
 using Kadder.Utilies;
 using Kadder.Messaging;
 using Microsoft.Extensions.DependencyInjection;
+using System.Text.Json;
 
 namespace Kadder
 {
@@ -13,17 +14,14 @@ namespace Kadder
     {
         private readonly GrpcHandlerBuilder _builder;
         private readonly ILogger<GrpcMessageServicer> _log;
-        private readonly IJsonSerializer _jsonSerializer;
 
-        public GrpcMessageServicer(ILogger<GrpcMessageServicer> log, GrpcHandlerBuilder builder, IJsonSerializer jsonSerializer)
+        public GrpcMessageServicer(ILogger<GrpcMessageServicer> log, GrpcHandlerBuilder builder)
         {
             _builder = builder;
             _log = log;
-            _jsonSerializer = jsonSerializer;
         }
 
-        public async Task<IMessageResultEnvelope> ProcessAsync(
-            GrpcContext context, Func<IMessageEnvelope, IServiceScope, Task<IMessageResultEnvelope>> handler)
+        public async Task<IMessageResultEnvelope> ProcessAsync(GrpcContext context, Func<IMessageEnvelope, IServiceScope, Task<IMessageResultEnvelope>> handler)
         {
             try
             {
@@ -33,7 +31,7 @@ namespace Kadder
             }
             catch (Exception ex)
             {
-                _log.LogError(ex, $"Message execute failed! reason:{ex.GetExceptionMessage()} Request:{_jsonSerializer.Serialize(context.Message)}");
+                _log.LogError(ex, $"Message execute failed! reason:{ex.GetExceptionMessage()} Request:{JsonSerializer.Serialize(context.Message)}");
                 throw;
             }
         }

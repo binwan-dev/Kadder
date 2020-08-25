@@ -7,6 +7,14 @@ namespace Kadder
 {
     public class GrpcClientBuilder
     {
+        public GrpcClientBuilder()
+        {
+            Interceptors = new List<Type>();
+            ClientMetadatas = new List<GrpcClientMetadata>();
+            BinarySerializer = new ProtobufBinarySerializer();
+            Strategy = new RoundRobinStrategy();
+        }
+
         public IList<Type> Interceptors { get; }
 
         public static IServiceProvider ServiceProvider { get; set; }
@@ -16,12 +24,6 @@ namespace Kadder
         public IList<GrpcClientMetadata> ClientMetadatas { get; private set; }
 
         public IGrpcClientStrategy Strategy { get; set; }
-
-        public GrpcClientBuilder()
-        {
-            Interceptors = new List<Type>();
-            ClientMetadatas = new List<GrpcClientMetadata>();
-        }
 
         [Obsolete("Use RegClient(GrpcClientOptions) version")]
         public GrpcClientMetadata RegClient(GrpcOptions options)
@@ -41,10 +43,10 @@ namespace Kadder
             Interceptors.Add(typeof(T));
             return this;
         }
-
-        public GrpcClientBuilder UseRoundRobinStrategy()
+        
+        public GrpcClientBuilder UseTextJsonSerializer()
         {
-            Strategy = new RoundRobinStrategy();
+            BinarySerializer = new TextJsonSerializer();
             return this;
         }
     }

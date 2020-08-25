@@ -5,7 +5,7 @@ namespace Kadder.Simple.Server
 {
     public class JsonMessageKServicer
     {
-        public Task<JsonMessageResult> HelloAsync(JsonMessage message)
+        public virtual Task<JsonMessageResult> HelloAsync(JsonMessage message)
         {
             return Task.FromResult(new JsonMessageResult()
             {

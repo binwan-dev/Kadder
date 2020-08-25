@@ -11,11 +11,8 @@ namespace Kadder.Middlewares
         public GrpcMiddlewareBase(HandlerDelegateAsync next)
         {
             _next = next;
-            Sort = 0;
             _serviceProvider = GrpcServerBuilder.ServiceProvider;
         }
-
-        public virtual int Sort { get; set; }
 
         protected IServiceProvider ServiceProvider => _serviceProvider;
 

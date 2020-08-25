@@ -5,7 +5,7 @@ namespace Kadder.Simple.Server
 {
     public class EndwidthKServicer
     {	
-        public Task HelloAsync()
+        public virtual Task HelloAsync()
         {
             Console.WriteLine("Hello, endwidth");
             return Task.CompletedTask;
