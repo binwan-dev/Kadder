@@ -20,7 +20,7 @@ namespace Kadder.Simple.Server
                         builder.Options = new GrpcServerOptions()
                             {
                                 Host = "0.0.0.0",
-                                Port = 3002,
+                                Port = 13002,
                                 NamespaceName = "Atlantis.Simple",
                                 ServiceName = "AtlantisService",
                                 // ScanAssemblies = new string[]
