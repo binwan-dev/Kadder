@@ -17,8 +17,8 @@ namespace Atlantis.Grpc.Simple.Client
         {
             var options = new GrpcClientOptions()
             {
-                Host = "svc-kadder-server",
-                Port = 80,
+                Host = "127.0.0.1",
+                Port = 13002,
                 NamespaceName = "Atlantis.Simple",
                 ServiceName = "AtlantisService",
                 ScanAssemblies = new string[]

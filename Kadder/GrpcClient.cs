@@ -24,7 +24,7 @@ namespace Kadder
         private ILogger<GrpcClient> _log;
         private DateTime _lastConnectedTime;
         private int _connecting = 0;
-        private bool _isConnected=false;
+        private bool _isConnected = false;
 
         public GrpcClient(GrpcClientMetadata metadata, GrpcClientBuilder builder, GrpcServiceCallBuilder serviceCallBuilder)
         {
@@ -123,7 +123,7 @@ namespace Kadder
                     throw ex;
                 }
 
-                _isConnected=false;
+                _isConnected = false;
                 await CreateChannelAsync();
                 return await InvokeAsync(method, host, request);
             }
@@ -152,10 +152,10 @@ namespace Kadder
 
         protected async virtual Task<Channel> CreateChannelAsync()
         {
-            while(!(Interlocked.CompareExchange(ref _connecting, 1, 0) == 0))
+            while (!(Interlocked.CompareExchange(ref _connecting, 1, 0) == 0))
             {
                 System.Threading.Thread.Sleep(500);
-                if(_isConnected)
+                if (_isConnected)
                 {
                     return _channel;
                 }
@@ -164,15 +164,15 @@ namespace Kadder
             Console.WriteLine("connect");
             try
             {
-               
+
                 _channel = new Channel(_options.Host, _options.Port, ChannelCredentials.Insecure);
                 await _channel.ConnectAsync(DateTime.UtcNow.AddSeconds(_metadata.Options.ConnectSecondTimeout));
-                _isConnected=true;
+                _isConnected = true;
                 return _channel;
             }
-            catch(TaskCanceledException)
+            catch (TaskCanceledException)
             {
-                throw new RpcException(new Status(StatusCode.Aborted,""),$"Faild connect {_channel.Target}");
+                throw new RpcException(new Status(StatusCode.Aborted, ""), $"Faild connect {_channel.Target}");
             }
             catch (Exception ex)
             {
