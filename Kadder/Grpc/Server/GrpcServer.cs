@@ -7,12 +7,12 @@ using Grpc.Core.Interceptors;
 
 namespace Kadder
 {
-    public class GrpcServer
+    public class GrpcServers
     {
         private readonly Server _server;
         private readonly GrpcServerOptions _options;
         private readonly GrpcServerBuilder _builder;
-        
+
         public GrpcServer(GrpcServerBuilder builder)
         {
             _builder = builder;
@@ -24,7 +24,7 @@ namespace Kadder
         public GrpcServer Start()
         {
             GrpcHandlerDirector.ConfigActor();
-            foreach(var grpcServiceType in _builder.Services)
+            foreach (var grpcServiceType in _builder.Services)
             {
                 var grpcService = (IGrpcServices)GrpcServerBuilder.ServiceProvider.GetService(grpcServiceType);
                 var definition = grpcService.BindServices();
@@ -36,7 +36,7 @@ namespace Kadder
         }
 
         private ServerServiceDefinition ResolveInterceptors(ServerServiceDefinition definition)
-        {            
+        {
             if (_builder.Interceptors != null && _builder.Interceptors.Count > 0)
             {
                 var interceptors = new List<Interceptor>();

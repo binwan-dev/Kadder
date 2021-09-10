@@ -1,68 +1,41 @@
-using GenAssembly;
-using GenAssembly.Descripters;
-using Grpc.Core;
-using Kadder.CodeGeneration;
-using Kadder.Messaging;
-using Kadder.Utilies;
-using Microsoft.Extensions.DependencyInjection;
-using ProtoBuf.Meta;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using GenAssembly;
+using GenAssembly.Descripters;
+using Kadder.Grpc;
+using Kadder.Messaging;
+using Kadder.Streaming;
 
-namespace Kadder
+namespace Kadder.GrpcServer
 {
-    public class GrpcServiceBuilder
+    public class ServiceProxyGenerator
     {
-        private List<string> _messages = new List<string>();
-        private Dictionary<string, string> _oldVersionGrpcMethods = new Dictionary<string, string>();
+        private readonly List<string> _messages;
+        private readonly Dictionary<string, string> _oldVersionGrpcMethods = new Dictionary<string, string>();
 
-        public List<ClassDescripter> GenerateGrpcProxy(GrpcServerOptions options, CodeBuilder codeBuilder = null)
+        public ServiceProxyGenerator()
         {
-            if (codeBuilder == null)
-            {
-                codeBuilder = CodeBuilder.Default;
-            }
-            var implInterfaceTypes = options.GetKServicers();
+            _messages = new List<string>();
+        }
+
+        public List<ClassDescripter> GenerateProxyer(List<Type> servicerTypes, string namespaceName)
+        {
+            var codeBuilder = new CodeBuilder(namespaceName, namespaceName);
             var classDescripterList = new List<ClassDescripter>();
             var protoMessageCode = new StringBuilder();
             var protoServiceCode = new StringBuilder();
-            foreach (Type service in implInterfaceTypes)
+
+            foreach (Type serviceType in servicerTypes)
             {
                 var bindServicesCode = new StringBuilder("return ServerServiceDefinition.CreateBuilder()\n");
-                protoServiceCode.AppendLine($"service {service.Name} {{");
-                var @class = this.GenerateGrpcService(service);
-                var interfaces = service.GetInterfaces();
-                foreach (var method in service.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly))
-                {
-                    if (method.CustomAttributes.FirstOrDefault(p => p.AttributeType == typeof(NotGrpcMethodAttribute)) != null)
-                    {
-                        continue;
-                    }
-                    var parameters = RpcParameterInfo.Convert(method.GetParameters());
-                    if (parameters.Count == 0)
-                    {
-                        var emptyMessageType = typeof(EmptyMessage);
-                        parameters.Add(new RpcParameterInfo()
-                        {
-                            Name = emptyMessageType.Name,
-                            ParameterType = emptyMessageType,
-                            IsEmpty = true
-                        });
-                    }
+                protoServiceCode.AppendLine($"service {serviceType.Name} {{");
+                var @class = generateProxyer(serviceType);
+                var interfaces = serviceType.GetInterfaces();
 
-                    @class = GenerateGrpcMethod(@class, method, parameters[0], interfaces);
-                    GenerateGrpcCallCode(method, parameters[0], options.NamespaceName, codeBuilder, ref bindServicesCode);
-                    GenerateGrpcCallCodeForOldVersion(method, parameters[0], options.NamespaceName, options.ServiceName, codeBuilder, ref bindServicesCode);
-                    if (options.IsGeneralProtoFile)
-                    {
-                        GenerateProtoCode(method, parameters[0], ref protoServiceCode, ref protoMessageCode);
-                    }
-                }
                 bindServicesCode.AppendLine(".Build();");
                 protoServiceCode.AppendLine();
                 protoServiceCode.AppendLine("}");
@@ -89,8 +62,8 @@ namespace Kadder
                 stringBuilder.AppendLine($"package {options.PackageName};\n");
                 stringBuilder.Append(protoServiceCode);
                 stringBuilder.AppendLine();
-                var messageCode=protoMessageCode.ToString();
-                if(messageCode.Contains(".bcl."))
+                var messageCode = protoMessageCode.ToString();
+                if (messageCode.Contains(".bcl."))
                 {
                     protoMessageCode.Replace(".bcl.", "");
                     protoMessageCode.AppendLine(Bcl.Proto);
@@ -101,14 +74,44 @@ namespace Kadder
                 {
                     File.Delete(path);
                 }
-                
+
                 File.WriteAllText(path, stringBuilder.ToString());
                 _messages = null;
             }
             return classDescripterList;
         }
 
-        private ClassDescripter GenerateGrpcService(Type service)
+        private string generateMethods(Type servicerType, ref ClassDescripter serviceProxyer)
+        {
+            foreach (var method in servicerType.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly))
+            {
+                if (method.CustomAttributes.FirstOrDefault(p => p.AttributeType == typeof(NotGrpcMethodAttribute)) != null)
+                    continue;
+
+                // var parameters = method.GetParameters().ToList();
+                // if (parameters.Count == 0)
+                // {
+                //     var emptyMessageType = typeof(EmptyMessage);
+                //     parameters.Add(new ParameterInfo()
+                //     {
+                //         Name = emptyMessageType.Name,
+                //         ParameterType = emptyMessageType,
+                //         IsEmpty = true
+                //     });
+                // }
+
+                serviceProxyer = GenerateGrpcMethod(serviceProxyer, method, parameters[0], interfaces);
+                GenerateGrpcCallCode(method, parameters[0], options.NamespaceName, codeBuilder, ref bindServicesCode);
+                GenerateGrpcCallCodeForOldVersion(method, parameters[0], options.NamespaceName, options.ServiceName, codeBuilder, ref bindServicesCode);
+                if (options.IsGeneralProtoFile)
+                {
+                    GenerateProtoCode(method, parameters[0], ref protoServiceCode, ref protoMessageCode);
+                }
+            }
+
+        }
+
+        private ClassDescripter generateProxyer(Type service)
         {
             var code =
                 @"_binarySerializer = GrpcServerBuilder.ServiceProvider.GetService<IBinarySerializer>();
@@ -135,46 +138,102 @@ namespace Kadder
                 .CreateConstructor(new ConstructorDescripter(name).SetCode(code).SetAccess(AccessType.Public));
         }
 
-        private ClassDescripter GenerateGrpcMethod(ClassDescripter @class, MethodInfo method, RpcParameterInfo parameter, Type[] baseInterfaces)
+        private Type parseMethodParameter(MethodInfo method)
         {
-            var className = method.DeclaringType.Name;
-            var messageName = parameter.ParameterType.Name;
-            var messageResultType = GrpcServiceBuilder.GetMethodReturn(method);
-            var messageResultName = messageResultType.Name;
-            var requestCode = "messageEnvelope.Message";
-            var responseCode = "var result = ";
-            var setResponseCode = "result";
-            if (parameter.IsEmpty)
+            var methodName = method.Name;
+            var servicerName = method.DeclaringType.FullName;
+
+            var methodParameters = method.GetParameters();
+            if (methodParameters.Length > 1)
+                throw new InvalidCastException($"The method({methodName}) parameter length cannot grather than 1! Servicer({servicerName})");
+            if (methodParameters.Length == 0)
+                return typeof(EmptyMessage);
+
+            var parameterType = methodParameters[0].ParameterType;
+            if (parameterType != typeof(IAsyncRequestStream<>) && parameterType.IsByRef)
+                throw new InvalidCastException($"The method({methodName}) ParameterType invalid! Servicer({typeof(servicerName)})");
+
+            return parameterType;
+        }
+
+        private Type parseMethodReturnParameter(MethodInfo method)
+        {
+            var methodName = method.Name;
+            var servicerName = method.DeclaringType.FullName;
+            var isVoidType = method.ReturnType == typeof(void) || (method.ReturnType == typeof(Task));
+
+            if (method.ReturnType.IsInterface && method.ReturnType != typeof(IAsyncResponseStream<T>))
+                throw new InvalidCastException($"The method({methodName}) ReturnType cannot definition interface type! Servicer({servicerName})");
+            if (!method.ReturnType.IsByRef && isVoidType)
+                throw new InvalidCastException($"The method({methodName}) ReturnType cannot definition value type! Servicer({servicerName})");
+            if (method.ReturnType != typeof(IAsyncResponseStream<>) && method.ReturnType != typeof(Task<>))
+                throw new InvalidCastException($"The method({methodName}) ReturnType invalid! Servicer({typeof(servicerName)})");
+
+            if (isVoidType)
+                return typeof(EmptyMessageResult);
+
+            var genericTypes = method.ReturnType.GetGenericArguments();
+            if (genericTypes.Length != 1)
+                throw new InvalidCastException($"The method({methodName}) ReturnType generic argument must be one argument! Servicer({servicerName})");
+            if (method.ReturnType == typeof(IAsyncResponseStream<>))
+                return method.ReturnType;
+
+            return genericTypes[0];
+        }
+
+        private string generateAwaitResultCode(Type returnType)
+        {
+            if (returnType == typeof(EmptyMessageResult))
+                return string.Empty;
+            return "var result = ";
+        }
+
+        private string generateRequestCode(Type parameterType)
+        {
+            if (returnType == typeof(EmptyMessage))
+                return string.Empty;
+            return "request";
+        }
+
+        private string generateReturnCode(Type returnType)
+        {
+            if (returnType == typeof(EmptyMessageResult))
+                return "new EmptyMessageResult()";
+            return "result";
+        }
+
+        private MethodDescripter generateServiceProxyerRpcMethod(MethodInfo method, Type parameterType, Type returnType)
+        {
+            var resultCode = generateAwaitResultCode(returnType);
+            var requestCode = generateRequestCode(parameterType);
+            var servicerName = method.DeclaringType.Name;
+
+            var proxyerMethod = new MethodDescripter(method.Name.Replace("Async", "") ?? "", true);
+            proxyerMethod.SetAccess(AccessType.Public);
+            proxyerMethod.SetParams(
+                new ParameterDescripter(parameter.ParameterType.Name, "request"),
+                new ParameterDescripter("ServerCallContext", "context"));
+            proxyerMethod.AppendCode($@"
+            {resultCode}await scope.ServiceProvider.GetService<{servicerName}>().{method.Name}({requestCode});
+            return {generateReturnCode(returnType)};");
+            proxyerMethod.AddUsing($"using {parameterType.Namespace};");
+            proxyerMethod.AddUsing($"using {method.DeclaringType.Namespace};");
+            proxyerMethod.AddUsing($"using {returnType.Namespace};");
+            return proxyerMethod;
+        }
+
+        private MethodDescripter generateServiceProxyerMethod(MethodInfo method, Type[] baseInterfaces)
+        {
+            var parameterType = parseMethodParameter(method);
+            var returnType = parseMethodReturnParameter(method);
+
+            switch (Helper.AnalyseCallType(parameterType, returnType))
             {
-                requestCode = string.Empty;
+                case CallType.Rpc:
+                    return generateServiceProxyerRpcMethod(method, parameterType, returnType);
+                case CallType.ClientStreamRpc:
+
             }
-            if (messageResultType.IsEmpty)
-            {
-                responseCode = string.Empty;
-                setResponseCode = "new EmptyMessageResult()";
-            }
-            var code = $@"
-            var envelope = new MessageEnvelope<{messageName}>();
-            envelope.Message = request;  
-            var grpcContext = new GrpcContext(envelope, context);
-            Func<IMessageEnvelope, IServiceScope, Task<IMessageResultEnvelope>> handler = async (imsgEnvelope, scope) => 
-            {{
-                var messageEnvelope = (MessageEnvelope<{messageName}>) imsgEnvelope;
-                {responseCode}await scope.ServiceProvider.GetService<{className}>().{method.Name}({requestCode});
-                return new MessageResultEnvelope<{messageResultName}>() {{ MessageResult = {setResponseCode} }};
-            }};
-            var resultEnvelope = await _messageServicer.ProcessAsync(grpcContext, handler);
-            return ((MessageResultEnvelope<{messageResultName}>)resultEnvelope).MessageResult;";
-            return @class.CreateMember(
-                new MethodDescripter(method.Name.Replace("Async", "") ?? "", true)
-                .SetAccess(AccessType.Public)
-                .AppendCode(code).SetReturn($"Task<{GrpcServiceBuilder.GetMethodReturn(method).Name}>")
-                .SetParams(
-                    new ParameterDescripter(parameter.ParameterType.Name, "request"),
-                    new ParameterDescripter("ServerCallContext", "context")))
-                .AddUsing($"using {parameter.ParameterType.Namespace};")
-                .AddUsing($"using {method.DeclaringType.Namespace};")
-                .AddUsing($"using {GrpcServiceBuilder.GetMethodReturn(method).Namespace};");
         }
 
         private void GenerateGrpcCallCode(MethodInfo method, RpcParameterInfo parameter, string namespaceName,
@@ -212,8 +271,8 @@ namespace Kadder
             string serviceName, CodeBuilder codeBuilder, ref StringBuilder bindServicesCode)
         {
             var serviceDefName = $"{namespaceName}.{serviceName}";
-            var methodDefName=method.Name.Replace("Async", "");
-            var key=$"{serviceDefName}.{methodDefName}";
+            var methodDefName = method.Name.Replace("Async", "");
+            var key = $"{serviceDefName}.{methodDefName}";
             if (_oldVersionGrpcMethods.ContainsKey(key))
             {
                 return;
@@ -259,7 +318,7 @@ namespace Kadder
             {
                 return string.Empty;
             }
-            var p= GetProto(messageType);
+            var p = GetProto(messageType);
             _messages.AddRange(p.Types);
             return p.Proto;
         }
@@ -296,52 +355,51 @@ namespace Kadder
             return name;
         }
 
-        private (string Proto,List<string> Types) GetProto(Type type)
+        private (string Proto, List<string> Types) GetProto(Type type)
         {
-            var p=RuntimeTypeModel.Default.GetSchema(type,ProtoSyntax.Proto3).Replace("\r", "");
-            var arr=p.Split('\n');
-            var proto=new StringBuilder();
-            var types=new List<string>();
-            var currentType=string.Empty;
-            var isEnum=false;
-            var isContent=false;
-            for(var i=0;i<arr.Length;i++)
+            var p = RuntimeTypeModel.Default.GetSchema(type, ProtoSyntax.Proto3).Replace("\r", "");
+            var arr = p.Split('\n');
+            var proto = new StringBuilder();
+            var types = new List<string>();
+            var currentType = string.Empty;
+            var isEnum = false;
+            var isContent = false;
+            for (var i = 0; i < arr.Length; i++)
             {
-                var item =arr[i];
-                if(item.StartsWith("syntax ")||item.StartsWith("package ")||item.StartsWith("import "))
+                var item = arr[i];
+                if (item.StartsWith("syntax ") || item.StartsWith("package ") || item.StartsWith("import "))
                 {
                     continue;
                 }
-                if(item.StartsWith("message"))
+                if (item.StartsWith("message"))
                 {
-                    currentType=item.Replace("message", "").Replace("{", "").Replace(" ", "");
-                    isContent=true;
+                    currentType = item.Replace("message", "").Replace("{", "").Replace(" ", "");
+                    isContent = true;
                 }
-                if(item.StartsWith("enum"))
+                if (item.StartsWith("enum"))
                 {
-                    currentType=item.Replace("enum", "").Replace("{", "").Replace(" ", "");
-                    isEnum=true;
-                    isContent=true;
+                    currentType = item.Replace("enum", "").Replace("{", "").Replace(" ", "");
+                    isEnum = true;
+                    isContent = true;
                 }
-                if(isContent&&_messages.Contains(currentType))
+                if (isContent && _messages.Contains(currentType))
                 {
                     continue;
                 }
-                if(item.EndsWith("}"))
+                if (item.EndsWith("}"))
                 {
-                    isContent=false;
-                    isEnum=false;
+                    isContent = false;
+                    isEnum = false;
                 }
-                if(isEnum&&!item.Contains("{"))
+                if (isEnum && !item.Contains("{"))
                 {
-                    var key=item.Replace(" ", "").Split('=')[0];
-                    item=item.Replace(key, $"{currentType}_{key}");
+                    var key = item.Replace(" ", "").Split('=')[0];
+                    item = item.Replace(key, $"{currentType}_{key}");
                 }
                 types.Add(currentType);
                 proto.AppendLine(item);
             }
-            return (proto.ToString(),types);
+            return (proto.ToString(), types);
         }
-
     }
 }
