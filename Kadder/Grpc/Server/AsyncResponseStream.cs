@@ -2,7 +2,7 @@ using System;
 using Grpc.Core;
 using Kadder.Streaming;
 
-namespace Kadder.GrpcServer
+namespace Kadder.Grpc.Server
 {
     public class AsyncResponseStream<T> : IAsyncResponseStream<T> where T : class
     {

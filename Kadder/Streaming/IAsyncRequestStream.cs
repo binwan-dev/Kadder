@@ -1,6 +1,6 @@
 namespace Kadder.Streaming
 {
-    public interface IAsyncRequestStream<T> where T : class
+    public interface IAsyncRequestStream<T> : IAsyncStream where T : class
     {
     }
 }

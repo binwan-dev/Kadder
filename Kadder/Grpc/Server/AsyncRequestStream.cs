@@ -1,7 +1,7 @@
 using Kadder.Streaming;
 using Grpc.Core;
 
-namespace Kadder.GrpcServer
+namespace Kadder.Grpc.Server
 {
     public class AsyncRequestStream<T> : IAsyncRequestStream<T> where T : class
     {

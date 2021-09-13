@@ -9,6 +9,9 @@ using GenAssembly.Descripters;
 using Kadder.Grpc;
 using Kadder.Messaging;
 using Kadder.Streaming;
+using Grpc.Core;
+using Kadder.Grpc.Server;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Kadder.GrpcServer
 {
@@ -162,12 +165,12 @@ namespace Kadder.GrpcServer
             var servicerName = method.DeclaringType.FullName;
             var isVoidType = method.ReturnType == typeof(void) || (method.ReturnType == typeof(Task));
 
-            if (method.ReturnType.IsInterface && method.ReturnType != typeof(IAsyncResponseStream<T>))
+            if (method.ReturnType.IsInterface && method.ReturnType != typeof(IAsyncResponseStream<>))
                 throw new InvalidCastException($"The method({methodName}) ReturnType cannot definition interface type! Servicer({servicerName})");
             if (!method.ReturnType.IsByRef && isVoidType)
                 throw new InvalidCastException($"The method({methodName}) ReturnType cannot definition value type! Servicer({servicerName})");
             if (method.ReturnType != typeof(IAsyncResponseStream<>) && method.ReturnType != typeof(Task<>))
-                throw new InvalidCastException($"The method({methodName}) ReturnType invalid! Servicer({typeof(servicerName)})");
+                throw new InvalidCastException($"The method({methodName}) ReturnType invalid! Servicer({servicerName})");
 
             if (isVoidType)
                 return typeof(EmptyMessageResult);
@@ -190,7 +193,7 @@ namespace Kadder.GrpcServer
 
         private string generateRequestCode(Type parameterType)
         {
-            if (returnType == typeof(EmptyMessage))
+            if (parameterType == typeof(EmptyMessage))
                 return string.Empty;
             return "request";
         }
@@ -202,27 +205,75 @@ namespace Kadder.GrpcServer
             return "result";
         }
 
-        private MethodDescripter generateServiceProxyerRpcMethod(MethodInfo method, Type parameterType, Type returnType)
+        private
+
+
+
+        private MethodDescripter generateRpcMethod(MethodInfo method, ClassDescripter @class, Type parameterType, Type returnType)
         {
             var resultCode = generateAwaitResultCode(returnType);
             var requestCode = generateRequestCode(parameterType);
             var servicerName = method.DeclaringType.Name;
 
-            var proxyerMethod = new MethodDescripter(method.Name.Replace("Async", "") ?? "", true);
+            var proxyerMethod = new MethodDescripter(method.Name.Replace("Async", "") ?? "", @class, true);
             proxyerMethod.SetAccess(AccessType.Public);
             proxyerMethod.SetParams(
-                new ParameterDescripter(parameter.ParameterType.Name, "request"),
+                new ParameterDescripter(parameterType.Name, "request"),
                 new ParameterDescripter("ServerCallContext", "context"));
             proxyerMethod.AppendCode($@"
             {resultCode}await scope.ServiceProvider.GetService<{servicerName}>().{method.Name}({requestCode});
             return {generateReturnCode(returnType)};");
-            proxyerMethod.AddUsing($"using {parameterType.Namespace};");
-            proxyerMethod.AddUsing($"using {method.DeclaringType.Namespace};");
-            proxyerMethod.AddUsing($"using {returnType.Namespace};");
+            proxyerMethod.Class.AddUsing($"using {parameterType.Namespace};");
+            proxyerMethod.Class.AddUsing($"using {method.DeclaringType.Namespace};");
+            proxyerMethod.Class.AddUsing($"using {returnType.Namespace};");
             return proxyerMethod;
         }
 
-        private MethodDescripter generateServiceProxyerMethod(MethodInfo method, Type[] baseInterfaces)
+        private MethodDescripter generateClientStreamRpcMethod(MethodInfo method, ClassDescripter @class, Type parameterType, Type returnType)
+        {
+            var resultCode = generateAwaitResultCode(returnType);
+            var servicerName = method.DeclaringType.Name;
+            var requestParameterType = parameterType.GenericTypeArguments[0];
+
+            var proxyerMethod = new MethodDescripter(method.Name.Replace("Async", "") ?? "", @class, true);
+            proxyerMethod.SetAccess(AccessType.Public);
+            proxyerMethod.SetParams(
+                new ParameterDescripter($"IAsyncStreamReader<{requestParameterType.Name}>", "request"),
+                new ParameterDescripter("ServerCallContext", "context"));
+            proxyerMethod.AppendCode($@"
+            var streamRequest = new AsyncRequestStream(request); 
+            {resultCode}await scope.ServiceProvider.GetService<{servicerName}>().{method.Name}(streamRequest);
+            return {generateReturnCode(returnType)};");
+            proxyerMethod.Class.AddUsing($"using {parameterType.Namespace};");
+            proxyerMethod.Class.AddUsing($"using {method.DeclaringType.Namespace};");
+            proxyerMethod.Class.AddUsing($"using {returnType.Namespace};");
+            proxyerMethod.Class.AddUsing($"using {typeof(IAsyncStreamReader<>).Namespace};");
+            return proxyerMethod;
+        }
+
+        private MethodDescripter generateServerStreamRpcMethod(MethodInfo method, ClassDescripter @class, Type parameterType, Type returnType)
+        {
+            var requestCode = generateRequestCode(parameterType);
+            var servicerName = method.DeclaringType.Name;
+            var responseType = returnType.GenericTypeArguments[0];
+
+            var proxyerMethod = new MethodDescripter(method.Name.Replace("Async", "") ?? "", @class, true);
+            proxyerMethod.SetAccess(AccessType.Public);
+            proxyerMethod.SetParams(
+                new ParameterDescripter(parameterType.Name, "request"),
+                new ParameterDescripter($"IAsyncStreamWriter<{responseType.Name}>", "responseStream"),
+                new ParameterDescripter("ServerCallContext", "context"));
+            proxyerMethod.AppendCode($@" 
+            
+            await scope.ServiceProvider.GetService<{servicerName}>().{method.Name}({requestCode});");
+            proxyerMethod.Class.AddUsing($"using {parameterType.Namespace};");
+            proxyerMethod.Class.AddUsing($"using {method.DeclaringType.Namespace};");
+            proxyerMethod.Class.AddUsing($"using {returnType.Namespace};");
+            proxyerMethod.Class.AddUsing($"using {typeof(IAsyncStreamWriter<>).Namespace};");
+            return proxyerMethod;
+        }
+
+        private ClassDescripter generateMethod(MethodInfo method, ClassDescripter @class, Type[] baseInterfaces)
         {
             var parameterType = parseMethodParameter(method);
             var returnType = parseMethodReturnParameter(method);
@@ -230,7 +281,8 @@ namespace Kadder.GrpcServer
             switch (Helper.AnalyseCallType(parameterType, returnType))
             {
                 case CallType.Rpc:
-                    return generateServiceProxyerRpcMethod(method, parameterType, returnType);
+                    @class.CreateMember(generateRpcMethod(method, @class, parameterType, returnType));
+                    break;
                 case CallType.ClientStreamRpc:
 
             }
