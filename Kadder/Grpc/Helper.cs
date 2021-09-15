@@ -7,6 +7,11 @@ namespace Kadder.Grpc
     {
         public static CallType AnalyseCallType(Type parameterType, Type returnParameterType)
         {
+            if(parameterType.IsGenericType)
+                parameterType=parameterType.GetGenericTypeDefinition();
+            if(returnParameterType.IsGenericType)
+                returnParameterType=returnParameterType.GetGenericTypeDefinition();
+            
             if (parameterType == typeof(IAsyncRequestStream<>) && returnParameterType == typeof(IAsyncResponseStream<>))
                 return CallType.DuplexStreamRpc;
             else if (parameterType == typeof(IAsyncRequestStream<>))

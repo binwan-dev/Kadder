@@ -4,6 +4,6 @@ namespace Kadder
 {
     public class GrpcClientExtension
     {
-        public static IDictionary<string,GrpcClient> ClientDic = new Dictionary<string,GrpcClient>();
+        // public static IDictionary<string,GrpcClient> ClientDic = new Dictionary<string,GrpcClient>();
     }
 }

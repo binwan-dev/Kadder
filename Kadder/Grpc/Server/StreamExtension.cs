@@ -1,6 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Kadder.Grpc.Server;
 using Kadder.Streaming;
 
 namespace Kadder.GrpcServer
