@@ -170,13 +170,14 @@ namespace Kadder.Grpc.Server
 
             method.AppendCode($@"using(var scope = {ClassProviderName}.CreateScope())
             {{
-                var streamRequest = new AsyncRequestStream(request); 
-                {resultCode}await scope.ServiceProvider.GetObject<{servicerName}>().{methodInfo.Name}(streamRequest);
+                var streamRequest = new AsyncRequestStream<{requestParameterType.Name}>(request); 
+                {resultCode}await scope.Provider.GetObject<{servicerName}>().{methodInfo.Name}(streamRequest);
                 return {generateReturnCode(returnType)};
             }}");
-            method.SetReturnType("Task");
+            method.SetReturnType($"Task<{returnType.Name}>");
 
             classDescripter.AddUsing(typeof(IAsyncStreamReader<>).Namespace);
+            classDescripter.AddUsing(typeof(AsyncRequestStream<>).Namespace);
             return method;
         }
 
@@ -188,16 +189,18 @@ namespace Kadder.Grpc.Server
 
             var method = generateMethodHead(ref classDescripter, methodInfo);
             method.Parameters.Add(new ParameterDescripter(parameterType.Name, "request"));
-            method.Parameters.Add(new ParameterDescripter($"IAsyncStreamWriter<{responseType.Name}>", "responseStream"));
+            method.Parameters.Add(new ParameterDescripter($"IAsyncStreamWriter<{responseType.Name}>", "response"));
             method.Parameters.Add(new ParameterDescripter("ServerCallContext", "context"));
 
-            method.AppendCode($@"using(var scope = {ClassProviderName}.CreateScope)
+            method.AppendCode($@"using(var scope = {ClassProviderName}.CreateScope())
             {{
-                await scope.ServiceProvider.GetObject<{servicerName}>().{methodInfo.Name}({requestCode}, responseStream);
+                var responseStream = new AsyncResponseStream<{responseType.Name}>(response);
+                await scope.Provider.GetObject<{servicerName}>().{methodInfo.Name}({requestCode}, responseStream);
             }}");
             method.SetReturnType("Task");
 
             classDescripter.AddUsing(typeof(IAsyncStreamWriter<>).Namespace);
+            classDescripter.AddUsing(typeof(AsyncRequestStream<>).Namespace);
             return method;
         }
 
@@ -212,13 +215,16 @@ namespace Kadder.Grpc.Server
             method.Parameters.Add(new ParameterDescripter($"IAsyncStreamWriter<{responseType.Name}>", "response"));
             method.Parameters.Add(new ParameterDescripter("ServerCallContext", "context"));
 
-            method.AppendCode($@"using(var scope = {ClassProviderName}.CreateScope)
+            method.AppendCode($@"using(var scope = {ClassProviderName}.CreateScope())
             {{
-                await scope.ServiceProvider.GetObject<{servicerName}>().{methodInfo.Name}(request, response);
+                var requestStream = new AsyncRequestStream<{requestParameterType.Name}>(request);
+                var responseStream = new AsyncResponseStream<{responseType.Name}>(response);
+                await scope.Provider.GetObject<{servicerName}>().{methodInfo.Name}(requestStream, responseStream);
             }}");
             method.SetReturnType("Task");
 
             classDescripter.AddUsing(typeof(IAsyncStreamWriter<>).Namespace);
+            classDescripter.AddUsing(typeof(AsyncRequestStream<>).Namespace);
             return method;
         }
 
@@ -256,15 +262,17 @@ namespace Kadder.Grpc.Server
 
             if (isVoidType && parameters.Length < 2)
                 return typeof(EmptyMessageResult);
-            
+
             var responseParameter = method.ReturnType;
             if (parameters.Length > 1)
                 responseParameter = parameters[1].ParameterType;
-            
+
             if (isVoidType && responseParameter.GetGenericTypeDefinition() == typeof(IAsyncResponseStream<>))
                 return responseParameter;
             if (!isVoidType && responseParameter.GetGenericTypeDefinition() == typeof(Task<>))
+            {
                 return responseParameter.GenericTypeArguments[0];
+            }
 
             throw new InvalidCastException($"The method({methodName}) ReturnType is Invalid! Servicer({servicerName})");
         }
@@ -305,9 +313,9 @@ namespace Kadder.Grpc.Server
                     continue;
 
                 var fakeMethodTypeAttribute = method.Attributes.FirstOrDefault(p => p.Name == FakeCallTypeAttributeName);
-                if(fakeMethodTypeAttribute==null)
+                if (fakeMethodTypeAttribute == null)
                     continue;
-                
+
                 var callType = (CallType)int.Parse(fakeMethodTypeAttribute.Parameters[0]);
                 bindServicesMethod.AppendCode(generateBindServicesCode(classDescripter, method, callType));
 
@@ -318,40 +326,41 @@ namespace Kadder.Grpc.Server
             return bindServicesMethod;
         }
 
-        private string generateBindServicesCode(ClassDescripter @class, MethodDescripter method,CallType callType)
+        private string generateBindServicesCode(ClassDescripter @class, MethodDescripter method, CallType callType)
         {
-            var requestType = method.Parameters[0].Type.Replace("IAsyncRequestStream<", "").Replace("Task<", "").Replace(">", "");
-            var responseType = method.ReturnTypeStr.Replace("IAsyncResponseStream<", "").Replace("Task<", "").Replace(">", "");
-            
+            var callInfo = getCallInfo(callType, method);
+            callInfo.RequestType = callInfo.RequestType.Replace("IAsyncStreamReader<", "").Replace("Task<", "").Replace(">", "");
+            callInfo.ResponseType = callInfo.ResponseType.Replace("IAsyncStreamWriter<", "").Replace("Task<", "").Replace(">", "");
+
             var code = new StringBuilder();
-            code.Append($@"                .AddMethod(new Method<{requestType}, {responseType}>(
-                    {getMethodType(callType)},
+            code.Append($@"                .AddMethod(new Method<{callInfo.RequestType}, {callInfo.ResponseType}>(
+                    {callInfo.MethodType},
                     ""{@class.Namespace}.{@class.Name}"",
                     ""{method.Name}"",
-                    new Marshaller<{requestType}>(
+                    new Marshaller<{callInfo.RequestType}>(
                         {ClassBinarySerializerName}.Serialize,
-                        {ClassBinarySerializerName}.Deserialize<{requestType}>
+                        {ClassBinarySerializerName}.Deserialize<{callInfo.RequestType}>
                     ),
-                    new Marshaller<{responseType}>(
+                    new Marshaller<{callInfo.ResponseType}>(
                         {ClassBinarySerializerName}.Serialize,
-                        {ClassBinarySerializerName}.Deserialize<{responseType}>
+                        {ClassBinarySerializerName}.Deserialize<{callInfo.ResponseType}>
                     )),
                     {method.Name})");
             return code.ToString();
         }
 
-        private string getMethodType(CallType callType)
+        private (String MethodType, string RequestType, string ResponseType) getCallInfo(CallType callType, MethodDescripter method)
         {
-            switch(callType)
+            switch (callType)
             {
                 case CallType.Rpc:
-                    return "MethodType.Unary";
+                    return ("MethodType.Unary", method.Parameters[0].Type, method.ReturnTypeStr);
                 case CallType.ClientStreamRpc:
-                    return "MethodType.ClientStreaming";
+                    return ("MethodType.ClientStreaming", method.Parameters[0].Type, method.ReturnTypeStr);
                 case CallType.ServerStreamRpc:
-                    return "MethodType.ServerStreaming";
+                    return ("MethodType.ServerStreaming", method.Parameters[0].Type, method.Parameters[1].Type);
                 case CallType.DuplexStreamRpc:
-                    return "MethodType.DuplexStreaming";
+                    return ("MethodType.DuplexStreaming", method.Parameters[0].Type, method.Parameters[1].Type);
                 default:
                     throw new InvalidCastException("Invalid CallType");
             }

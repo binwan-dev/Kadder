@@ -7,6 +7,7 @@ using Kadder;
 using Kadder.Grpc.Server;
 using Kadder.Grpc.Server.AspNetCore;
 using Kadder.Utils;
+using Kadder.Grpc.Server.NetCore;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
@@ -46,9 +47,24 @@ namespace Microsoft.Extensions.DependencyInjection
 
             services.AddSingleton(server);
             services.AddSingleton(builder);
+            services.AddSingleton<IBinarySerializer,ProtobufBinarySerializer>();
             services.AddSingleton(typeof(KadderBuilder), builder);
+            services.AddSingleton<IObjectProvider,ObjectProvider>();
             
             return services;
+        }
+
+        public static IServiceProvider StartGrpcServer(this IServiceProvider provider)
+        {
+            var builder=provider.GetService<GrpcServerBuilder>();
+            var server=provider.GetService<Server>();
+
+            foreach(var serviceProxyer in builder.GrpcServicerProxyers)
+                server.Services.Add(((IGrpcServices)provider.GetService(serviceProxyer)).BindServices());
+
+            server.Start();
+
+            return provider;
         }
     }
 }

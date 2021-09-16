@@ -32,7 +32,8 @@ namespace Kadder.Simple.Server
 
                     Console.WriteLine("Server is running...");
                 }).Build();
-            
+
+            host.Services.StartGrpcServer();
             await host.RunAsync();
         }
     }

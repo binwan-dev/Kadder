@@ -1,4 +1,4 @@
-namespace Kadder.Utilies
+namespace Kadder.Utils
 {
     public interface IBinarySerializer
     {

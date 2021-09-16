@@ -4,7 +4,7 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using ProtoBuf;
 
-namespace Kadder.Utilies
+namespace Kadder.Utils
 {
     public class ProtobufBinarySerializer : IBinarySerializer
     {
