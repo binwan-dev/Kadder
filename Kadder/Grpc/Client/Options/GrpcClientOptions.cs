@@ -1,24 +1,20 @@
 using System;
+using System.Collections.Generic;
+using Grpc.Core;
 
-namespace Kadder
+namespace Kadder.Grpc.Client.Options
 {
-    public class GrpcClientOptions : GrpcOptions
+    public class GrpcClientOptions
     {
         public GrpcClientOptions()
         {
+            Addresses=new List<string>();
             ConnectSecondTimeout = 10;
             KeepLive=true;
         }
-        
-        public GrpcClientOptions(GrpcOptions options):this()
-        {
-            Host=options.Host;
-            Port=options.Port;
-            NamespaceName = options.NamespaceName;
-            ServiceName=options.ServiceName;
-            ScanAssemblies=options.ScanAssemblies;
-        }
 
+        public IList<string> Addresses{get;set;}
+        
         /// <summary>
         /// Connection timeout (unit: s)
         /// </summary>

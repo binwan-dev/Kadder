@@ -107,8 +107,8 @@ namespace Kadder.Grpc.Server
         #region method
         private MethodDescripter generateMethod(ref ClassDescripter classDescripter, MethodInfo methodInfo)
         {
-            var parameterType = parseMethodParameter(methodInfo);
-            var returnType = parseMethodReturnParameter(methodInfo);
+            var parameterType = methodInfo.ParseMethodParameter();
+            var returnType = methodInfo.ParseMethodReturnParameter();
             var callType = Helper.AnalyseCallType(parameterType, returnType);
 
             classDescripter.AddUsing(parameterType.Namespace, returnType.Namespace, methodInfo.DeclaringType.Namespace);
@@ -140,8 +140,8 @@ namespace Kadder.Grpc.Server
 
         private MethodDescripter generateRpcMethod(ref ClassDescripter classDescripter, MethodInfo methodInfo, Type parameterType, Type returnType)
         {
-            var resultCode = generateAwaitResultCode(returnType);
-            var requestCode = generateRequestCode(parameterType);
+            var resultCode = Helper.GenerateAwaitResultCode(returnType);
+            var requestCode = Helper.GenerateRequestCode(parameterType);
             var servicerName = methodInfo.DeclaringType.FullName;
 
             var method = generateMethodHead(ref classDescripter, methodInfo);
@@ -151,7 +151,7 @@ namespace Kadder.Grpc.Server
             method.AppendCode($@"using(var scope = {ClassProviderName}.CreateScope())
             {{
                 {resultCode}await scope.Provider.GetObject<{servicerName}>().{methodInfo.Name}({requestCode});
-                return {generateReturnCode(returnType)};
+                return {Helper.GenerateReturnCode(returnType)};
             }}");
             method.SetReturnType($"Task<{returnType.Name}>");
 
@@ -160,7 +160,7 @@ namespace Kadder.Grpc.Server
 
         private MethodDescripter generateClientStreamRpcMethod(ref ClassDescripter classDescripter, MethodInfo methodInfo, Type parameterType, Type returnType)
         {
-            var resultCode = generateAwaitResultCode(returnType);
+            var resultCode = Helper.GenerateAwaitResultCode(returnType);
             var servicerName = methodInfo.DeclaringType.FullName;
             var requestParameterType = parameterType.GenericTypeArguments[0];
 
@@ -172,7 +172,7 @@ namespace Kadder.Grpc.Server
             {{
                 var streamRequest = new AsyncRequestStream<{requestParameterType.Name}>(request); 
                 {resultCode}await scope.Provider.GetObject<{servicerName}>().{methodInfo.Name}(streamRequest);
-                return {generateReturnCode(returnType)};
+                return {Helper.GenerateReturnCode(returnType)};
             }}");
             method.SetReturnType($"Task<{returnType.Name}>");
 
@@ -183,7 +183,7 @@ namespace Kadder.Grpc.Server
 
         private MethodDescripter generateServerStreamRpcMethod(ref ClassDescripter classDescripter, MethodInfo methodInfo, Type parameterType, Type returnType)
         {
-            var requestCode = generateRequestCode(parameterType);
+            var requestCode = Helper.GenerateRequestCode(parameterType);
             var servicerName = methodInfo.DeclaringType.FullName;
             var responseType = returnType.GenericTypeArguments[0];
 
@@ -235,67 +235,6 @@ namespace Kadder.Grpc.Server
             var method = new MethodDescripter(methodName, classDescripter, true);
             method.Access = AccessType.Public;
             return method;
-        }
-
-        private Type parseMethodParameter(MethodInfo method)
-        {
-            var methodName = method.Name;
-            var servicerName = method.DeclaringType.FullName;
-
-            var methodParameters = method.GetParameters();
-            if (methodParameters.Length == 0)
-                return typeof(EmptyMessage);
-
-            var parameterType = methodParameters[0].ParameterType;
-            if (parameterType.IsGenericType && parameterType.GetGenericTypeDefinition() != typeof(IAsyncRequestStream<>) && parameterType.IsByRef)
-                throw new InvalidCastException($"The method({methodName}) ParameterType invalid! Servicer({servicerName})");
-
-            return parameterType;
-        }
-
-        private Type parseMethodReturnParameter(MethodInfo method)
-        {
-            var methodName = method.Name;
-            var servicerName = method.DeclaringType.FullName;
-            var isVoidType = method.ReturnType == typeof(void) || (method.ReturnType == typeof(Task));
-            var parameters = method.GetParameters();
-
-            if (isVoidType && parameters.Length < 2)
-                return typeof(EmptyMessageResult);
-
-            var responseParameter = method.ReturnType;
-            if (parameters.Length > 1)
-                responseParameter = parameters[1].ParameterType;
-
-            if (isVoidType && responseParameter.GetGenericTypeDefinition() == typeof(IAsyncResponseStream<>))
-                return responseParameter;
-            if (!isVoidType && responseParameter.GetGenericTypeDefinition() == typeof(Task<>))
-            {
-                return responseParameter.GenericTypeArguments[0];
-            }
-
-            throw new InvalidCastException($"The method({methodName}) ReturnType is Invalid! Servicer({servicerName})");
-        }
-
-        private string generateAwaitResultCode(Type returnType)
-        {
-            if (returnType == typeof(EmptyMessageResult))
-                return string.Empty;
-            return "var result = ";
-        }
-
-        private string generateRequestCode(Type parameterType)
-        {
-            if (parameterType == typeof(EmptyMessage))
-                return string.Empty;
-            return "request";
-        }
-
-        private string generateReturnCode(Type returnType)
-        {
-            if (returnType == typeof(EmptyMessageResult))
-                return "new EmptyMessageResult()";
-            return "result";
         }
         #endregion
 

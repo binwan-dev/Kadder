@@ -24,5 +24,10 @@ namespace Kadder.Utils
             return kServicers;
 
         }
+
+        public static MethodInfo[] GetMethod(Type servicerType)
+        {
+            return servicerType.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+        }
     }
 }

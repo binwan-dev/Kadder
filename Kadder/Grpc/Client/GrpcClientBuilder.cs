@@ -6,7 +6,7 @@ using Kadder.Utils;
 
 namespace Kadder
 {
-    public class GrpcClientBuilder
+    public class GrpcClientBuilder:KadderBuilder
     {
         public IList<Type> Interceptors { get; }
 

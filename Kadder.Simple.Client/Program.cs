@@ -8,6 +8,7 @@ using Kadder.Utilies;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using ProtoBuf;
+using Kadder.Grpc.Client;
 
 namespace Atlantis.Grpc.Simple.Client
 {
@@ -15,37 +16,40 @@ namespace Atlantis.Grpc.Simple.Client
     {
         static void Main(string[] args)
         {
-            var options = new GrpcClientOptions()
-            {
-                Host = "127.0.0.1",
-                Port = 13002,
-                NamespaceName = "Atlantis.Simple",
-                ServiceName = "AtlantisService",
-                ScanAssemblies = new string[]
-                {
-                    typeof(IPersonMessageServicer).Assembly.FullName
-                }
-            };
+            // var options = new GrpcClientOptions()
+            // {
+            //     Host = "127.0.0.1",
+            //     Port = 13002,
+            //     NamespaceName = "Atlantis.Simple",
+            //     ServiceName = "AtlantisService",
+            //     ScanAssemblies = new string[]
+            //     {
+            //         typeof(IPersonMessageServicer).Assembly.FullName
+            //     }
+            // };
 
-            IServiceCollection services = new ServiceCollection();
-            services.AddLogging(b => b.AddConsole());
-            services.AddTransient(typeof(ILogger<>), typeof(NullLogger<>));
-            services.AddKadderGrpcClient(builder =>
-            {
-                builder.RegClient(options);
-                //builder.RegShareInterceptor<Kadder.Simple.Client.LoggerInterceptor>();
-            });
+            // IServiceCollection services = new ServiceCollection();
+            // services.AddLogging(b => b.AddConsole());
+            // services.AddTransient(typeof(ILogger<>), typeof(NullLogger<>));
+            // services.AddKadderGrpcClient(builder =>
+            // {
+            //     builder.RegClient(options);
+            //     //builder.RegShareInterceptor<Kadder.Simple.Client.LoggerInterceptor>();
+            // });
 
-            var provider = services.BuildServiceProvider();
-            provider.ApplyKadderGrpcClient();
-            var log = provider.GetService<ILogger<GrpcClient>>();
-            log.LogInformation("dd");
+            // var provider = services.BuildServiceProvider();
+            // provider.ApplyKadderGrpcClient();
+            // var log = provider.GetService<ILogger<GrpcClient>>();
+            // log.LogInformation("dd");
+
+            var animalServicer=new Kadder.Simple.Client.AnimalMessageServicer();
+            var s=animalServicer.ClientStreamAsync<HelloMessage,HelloMessageResult>(animalServicer.ClientAsync);
 
             // TestInterceptor(provider);
 
-            TestNumber(provider);
+            // TestNumber(provider);
 
-            Console.ReadLine();
+            // Console.ReadLine();
 
             // var channel = new Channel("127.0.0.1", 3002, ChannelCredentials.Insecure);
 
