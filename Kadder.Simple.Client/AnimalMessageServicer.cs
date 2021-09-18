@@ -21,6 +21,11 @@ namespace Kadder.Simple.Client
             throw new System.NotImplementedException();
         }
 
+        public Task HelloAsync()
+        {
+            throw new System.NotImplementedException();
+        }
+
         public Task ServerAsync(HelloMessage request, IAsyncResponseStream<HelloMessageResult> response)
         {
             throw new System.NotImplementedException();

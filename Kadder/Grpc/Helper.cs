@@ -79,11 +79,13 @@ namespace Kadder.Grpc
             return "request";
         }
 
-        public static string GenerateReturnCode(Type returnType)
+        public static string GenerateReturnCode(Type returnType,bool isClient=false)
         {
-            if (returnType == typeof(EmptyMessageResult))
-                return "new EmptyMessageResult()";
-            return "result";
+            if (returnType == typeof(EmptyMessageResult)&&!isClient)
+                return "return new EmptyMessageResult();";
+            if (returnType == typeof(EmptyMessageResult)&&isClient)
+                return string.Empty;
+            return "return result;";
         }
 
     }

@@ -1,14 +1,21 @@
-// using System;
-// using System.Collections.Generic;
-// using System.Threading;
-// using System.Threading.Tasks;
-// using GenAssembly;
-// using Grpc.Core;
-// using Grpc.Core.Interceptors;
-// using Kadder.Utilies;
-// using Microsoft.Extensions.DependencyInjection;
-// using Microsoft.Extensions.Logging;
+using System;
+using System.Collections.Generic;
+using Kadder.Grpc.Client.Options;
 
+namespace Kadder.Grpc.Client
+{
+    public class GrpcClient
+    {
+        private readonly IList<Type> _servicerTypes;
+        private readonly IList<GrpcClientOptions> _clientOptions;
+
+        public GrpcClient(IList<Type> servicerTypes, IList<GrpcClientOptions> clientOptions)
+        {
+            _servicerTypes = servicerTypes;
+            _clientOptions = clientOptions;
+        }
+    }
+}
 // namespace Kadder
 // {
 //     public class GrpcClient

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using Grpc.Core;
 
 namespace Kadder.Grpc.Client.Options
@@ -8,13 +9,15 @@ namespace Kadder.Grpc.Client.Options
     {
         public GrpcClientOptions()
         {
-            Addresses=new List<string>();
+            Addresses = new List<ChannelOption>();
+            Assemblies = new List<Assembly>();
+            AssemblyFullNames = new List<string>();
             ConnectSecondTimeout = 10;
-            KeepLive=true;
+            KeepLive = true;
         }
 
-        public IList<string> Addresses{get;set;}
-        
+        public IList<ChannelOption> Addresses { get; set; }
+
         /// <summary>
         /// Connection timeout (unit: s)
         /// </summary>
@@ -24,5 +27,9 @@ namespace Kadder.Grpc.Client.Options
         /// Keep connect live
         /// </summary>
         public bool KeepLive { get; set; }
+
+        public IList<Assembly> Assemblies { get; set; }
+
+        public IList<string> AssemblyFullNames { get; set; }
     }
 }

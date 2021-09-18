@@ -5,6 +5,7 @@ using System.Reflection;
 using System.Text;
 using GenAssembly;
 using GenAssembly.Descripters;
+using Grpc.Core;
 using Kadder.Messaging;
 using Kadder.Utils;
 
@@ -32,6 +33,7 @@ namespace Kadder.Grpc.Client
             var grpcMethods = ServicerHelper.GetMethod(servicerType);
             foreach (var method in grpcMethods)
                 classDescripter.CreateMember(generateMethod(ref classDescripter, method));
+            classDescripter.CreateMember(generateBindServicesMethod(ref classDescripter));
 
             return classDescripter;
         }
@@ -94,7 +96,7 @@ namespace Kadder.Grpc.Client
 
             classDescripter.AddUsing(parameterType.Namespace, returnType.Namespace, methodInfo.DeclaringType.Namespace);
 
-            if(methodInfo.CustomAttributes.FirstOrDefault(p => p.AttributeType == typeof(NotGrpcMethodAttribute)) != null)
+            if (methodInfo.CustomAttributes.FirstOrDefault(p => p.AttributeType == typeof(NotGrpcMethodAttribute)) != null)
                 return generateNoGrpcMethod(ref classDescripter, methodInfo, parameterType, returnType);
 
             var method = new MethodDescripter("", classDescripter);
@@ -115,7 +117,7 @@ namespace Kadder.Grpc.Client
                 default:
                     throw new InvalidOperationException("Invalid Method definition!");
             }
-            
+
             return method;
         }
 
@@ -130,7 +132,8 @@ namespace Kadder.Grpc.Client
             var method = generateMethodHead(ref classDescripter, methodInfo);
             method.Parameters.Add(new ParameterDescripter(parameterType.Name, "request"));
 
-            method.AppendCode($@"{resultCode}{ClassServicerInvokerName}.RpcAsync<{parameterType.Name}, {returnType.Name}>(request, {servicerName}, {methodName});");
+            method.AppendCode($@"{resultCode} await {ClassServicerInvokerName}.RpcAsync<{parameterType.Name}, {returnType.Name}>(request, ""{servicerName}"", ""{methodName}"");
+            {Helper.GenerateReturnCode(returnType,true)}");
             method.SetReturnType(resultType);
 
             return method;
@@ -139,12 +142,17 @@ namespace Kadder.Grpc.Client
         private MethodDescripter generateClientStreamRpcMethod(ref ClassDescripter classDescripter, MethodInfo methodInfo, Type parameterType, Type returnType)
         {
             var servicerName = methodInfo.DeclaringType.FullName;
+            var resultCode = Helper.GenerateAwaitResultCode(returnType);
+            var resultType = generateRpcResponseType(returnType);
+            var methodName = methodInfo.Name.Replace("Async", "");
+            var requestType = parameterType.GenericTypeArguments[0];
 
             var method = generateMethodHead(ref classDescripter, methodInfo);
-            method.Parameters.Add(new ParameterDescripter("IAsyncRequestStream<{parameterType.Name}>", "request"));
+            method.Parameters.Add(new ParameterDescripter($"IAsyncRequestStream<{requestType.Name}>", "request"));
 
-            method.AppendCode($@"throw new InvalidOperationException(""Invalid operation! Please call {servicerName}.ClientStreamAsync method"")");
-            method.SetReturnType("Task");
+            method.AppendCode($@"{resultCode}await {ClassServicerInvokerName}.ClientStreamAsync<{requestType.Name}, {returnType.Name}>(request, ""{servicerName}"", ""{methodName}"");
+            {Helper.GenerateReturnCode(returnType,true)}");
+            method.SetReturnType(resultType);
 
             return method;
         }
@@ -152,12 +160,18 @@ namespace Kadder.Grpc.Client
         private MethodDescripter generateServerStreamRpcMethod(ref ClassDescripter classDescripter, MethodInfo methodInfo, Type parameterType, Type returnType)
         {
             var servicerName = methodInfo.DeclaringType.FullName;
+            var requestCode = Helper.GenerateRequestCode(parameterType);
+            var methodName = methodInfo.Name.Replace("Async", "");
+            var responseType = returnType.GenericTypeArguments[0];
+
+            if (!string.IsNullOrWhiteSpace(requestCode))
+                requestCode += ", ";
 
             var method = generateMethodHead(ref classDescripter, methodInfo);
             method.Parameters.Add(new ParameterDescripter(parameterType.Name, "request"));
-            method.Parameters.Add(new ParameterDescripter($"IAsyncResponseStream<{returnType.Name}>", "response"));
+            method.Parameters.Add(new ParameterDescripter($"IAsyncResponseStream<{responseType.Name}>", "response"));
 
-            method.AppendCode($@"throw new InvalidOperationException(""Invalid operation! Please call {servicerName}.ServerStreamAsync method"")");
+            method.AppendCode($@"await {ClassServicerInvokerName}.ServerStreamAsync<{parameterType.Name}, {responseType.Name}>({requestCode}response, ""{servicerName}"", ""{methodName}"");");
             method.SetReturnType("Task");
 
             return method;
@@ -166,12 +180,15 @@ namespace Kadder.Grpc.Client
         private MethodDescripter generateDuplexStreamRpcMethod(ref ClassDescripter classDescripter, MethodInfo methodInfo, Type parameterType, Type returnType)
         {
             var servicerName = methodInfo.DeclaringType.FullName;
+            var methodName = methodInfo.Name.Replace("Async", "");
+            var requestType = parameterType.GenericTypeArguments[0];
+            var responseType = returnType.GenericTypeArguments[0];
 
             var method = generateMethodHead(ref classDescripter, methodInfo);
-            method.Parameters.Add(new ParameterDescripter("IAsyncRequestStream<{parameterType.Name}>", "request"));
-            method.Parameters.Add(new ParameterDescripter($"IAsyncResponseStream<{returnType.Name}>", "response"));
+            method.Parameters.Add(new ParameterDescripter($"IAsyncRequestStream<{requestType.Name}>", "request"));
+            method.Parameters.Add(new ParameterDescripter($"IAsyncResponseStream<{responseType.Name}>", "response"));
 
-            method.AppendCode($@"throw new InvalidOperationException(""Invalid operation! Please call {servicerName}.DuplexStreamAsync method"")");
+            method.AppendCode($@"await {ClassServicerInvokerName}.DuplexStreamAsync<{requestType.Name}, {responseType.Name}>(request, response, ""{servicerName}"", ""{methodName}"");");
             method.SetReturnType("Task");
 
             return method;
@@ -179,9 +196,9 @@ namespace Kadder.Grpc.Client
 
         private MethodDescripter generateNoGrpcMethod(ref ClassDescripter classDescripter, MethodInfo methodInfo, Type parameterType, Type returnType)
         {
-            var method = generateMethod(ref classDescripter, methodInfo);
+            var method = new MethodDescripter(methodInfo.Name, classDescripter, false);
+            method.Access = AccessType.Public;
             method.SetReturnType(GetReturnName(ref classDescripter, returnType));
-            method.Access=AccessType.Public;
 
             var parameterDescripters = new List<ParameterDescripter>();
             foreach (var param in methodInfo.GetParameters())
@@ -189,7 +206,7 @@ namespace Kadder.Grpc.Client
                 classDescripter.AddUsing(param.ParameterType.Namespace);
                 method.Parameters.Add(new ParameterDescripter(GetReturnName(ref classDescripter, param.ParameterType), param.Name));
             }
-            
+
             method.AppendCode("throw new System.NotImplementedException();");
 
             return method;
@@ -210,10 +227,10 @@ namespace Kadder.Grpc.Client
             return $"Task<{returnType.Name}>";
         }
 
-        private string GetReturnName(ref ClassDescripter classDescripter,Type type)
+        private string GetReturnName(ref ClassDescripter classDescripter, Type type)
         {
             classDescripter.AddUsing(type.Namespace);
-            
+
             if (type.IsGenericType)
             {
                 var typeName = $"{type.FullName.Split('`')[0]}<";
@@ -246,8 +263,17 @@ namespace Kadder.Grpc.Client
                 return type.FullName;
             }
         }
+        #endregion
 
-
+        #region GrpcCallMethod
+        private MethodDescripter generateBindServicesMethod(ref ClassDescripter classDescripter)
+        {
+            var bindServicesMethod = new MethodDescripter("BindServices", classDescripter);
+            bindServicesMethod.Access = AccessType.Public;
+            bindServicesMethod.SetReturnType(typeof(ServerServiceDefinition));
+            bindServicesMethod.AppendCode(@"throw new NotImplementedException();");
+            return bindServicesMethod;
+        }
         #endregion
     }
 }

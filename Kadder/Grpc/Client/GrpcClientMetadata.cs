@@ -7,20 +7,20 @@ namespace Kadder
 {
     public class GrpcClientMetadata
     {
-        public GrpcClientMetadata(GrpcClientOptions options)
-        {
-            Options = options;
-            PrivateInterceptors = new List<Type>();
-        }
+        // public GrpcClientMetadata(GrpcClientOptions options)
+        // {
+        //     Options = options;
+        //     PrivateInterceptors = new List<Type>();
+        // }
 
-        public IList<Type> PrivateInterceptors { get; set; }
+        // public IList<Type> PrivateInterceptors { get; set; }
 
-        public GrpcClientOptions Options { get; set; } 
+        // // public GrpcClientOptions Options { get; set; } 
 
-        public GrpcClientMetadata RegInterceptor<T>() where T : Interceptor
-        {
-            PrivateInterceptors.Add(typeof(T));
-            return this;
-        }
+        // public GrpcClientMetadata RegInterceptor<T>() where T : Interceptor
+        // {
+        //     PrivateInterceptors.Add(typeof(T));
+        //     return this;
+        // }
     }
 }

@@ -9,6 +9,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using ProtoBuf;
 using Kadder.Grpc.Client;
+using Kadder.Streaming;
 
 namespace Atlantis.Grpc.Simple.Client
 {
@@ -16,6 +17,13 @@ namespace Atlantis.Grpc.Simple.Client
     {
         static void Main(string[] args)
         {
+            IServiceCollection servicers = new ServiceCollection();
+            servicers.UseGrpcClient(builder =>
+            {
+                builder.GrpcServerOptions = new GrpcServerOptions() { PackageName = typeof(IAnimalMessageServicer).Namespace };
+                builder.Assemblies.Add(typeof(IAnimalMessageServicer).Assembly);
+            });
+
             // var options = new GrpcClientOptions()
             // {
             //     Host = "127.0.0.1",
@@ -42,8 +50,15 @@ namespace Atlantis.Grpc.Simple.Client
             // var log = provider.GetService<ILogger<GrpcClient>>();
             // log.LogInformation("dd");
 
-            var animalServicer=new Kadder.Simple.Client.AnimalMessageServicer();
-            var s=animalServicer.ClientStreamAsync<HelloMessage,HelloMessageResult>(animalServicer.ClientAsync);
+            // var animalServicer=new Kadder.Simple.Client.AnimalMessageServicer();
+            // var request=StreamMessage.CreateRequest<HelloMessage>();
+            // Console.WriteLine(((AsyncRequestStream<HelloMessage>)request).Name);
+            // change(request);
+            // Console.WriteLine(((AsyncRequestStream<HelloMessage>)request).Name);
+            // var res=animalServicer.ClientAsync(request);
+
+
+            // var s=animalServicer.ClientStreamAsync<HelloMessage,HelloMessageResult>(animalServicer.ClientAsync);
 
             // TestInterceptor(provider);
 
@@ -66,6 +81,14 @@ namespace Atlantis.Grpc.Simple.Client
             // // {
             // //     Console.Write($" {b}");
             // }
+        }
+
+        public static IAsyncRequestStream<TRequest> change<TRequest>(IAsyncRequestStream<TRequest> request) where TRequest : class
+        {
+            var grpc = new AsyncRequestStream<TRequest>();
+            grpc.Name = "bbbb";
+            request = grpc;
+            return request;
         }
 
         // static void TestAI(ServiceProvider provider)

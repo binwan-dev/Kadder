@@ -151,7 +151,7 @@ namespace Kadder.Grpc.Server
             method.AppendCode($@"using(var scope = {ClassProviderName}.CreateScope())
             {{
                 {resultCode}await scope.Provider.GetObject<{servicerName}>().{methodInfo.Name}({requestCode});
-                return {Helper.GenerateReturnCode(returnType)};
+                {Helper.GenerateReturnCode(returnType)}
             }}");
             method.SetReturnType($"Task<{returnType.Name}>");
 
@@ -172,7 +172,7 @@ namespace Kadder.Grpc.Server
             {{
                 var streamRequest = new AsyncRequestStream<{requestParameterType.Name}>(request); 
                 {resultCode}await scope.Provider.GetObject<{servicerName}>().{methodInfo.Name}(streamRequest);
-                return {Helper.GenerateReturnCode(returnType)};
+                {Helper.GenerateReturnCode(returnType)}
             }}");
             method.SetReturnType($"Task<{returnType.Name}>");
 
