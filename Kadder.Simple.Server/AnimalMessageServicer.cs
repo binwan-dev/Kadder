@@ -1,6 +1,9 @@
 using System.Threading.Tasks;
 using Kadder.Streaming;
 using Kadder.Utilies;
+using Kadder.Grpc.Server;
+using System.Threading;
+using System;
 
 namespace Kadder.Simple.Server
 {
@@ -8,9 +11,9 @@ namespace Kadder.Simple.Server
     {
         Task<HelloMessageResult> HelloAsync(HelloMessage message);
 
-        Task DuplexAsync(IAsyncRequestStream<HelloMessage> request,IAsyncResponseStream<HelloMessageResult> response);
+        Task DuplexAsync(IAsyncRequestStream<HelloMessage> request, IAsyncResponseStream<HelloMessageResult> response);
 
-        Task ServerAsync(HelloMessage request,IAsyncResponseStream<HelloMessageResult> response);
+        Task ServerAsync(HelloMessage request, IAsyncResponseStream<HelloMessageResult> response);
 
         Task<HelloMessageResult> ClientAsync(IAsyncRequestStream<HelloMessage> request);
 
@@ -19,9 +22,16 @@ namespace Kadder.Simple.Server
 
     public class AnimalMessageServicer : IAnimalMessageServicer
     {
-        public Task<HelloMessageResult> ClientAsync(IAsyncRequestStream<HelloMessage> request)
+        public async Task<HelloMessageResult> ClientAsync(IAsyncRequestStream<HelloMessage> request)
         {
-            throw new System.NotImplementedException();
+            var token = new CancellationToken();
+            while (await request.MoveNextAsync(token))
+            {
+                var req = request.GetCurrent();
+                Console.WriteLine($"Requet: {req.Name} Type: {req.Type}");
+            }
+
+            return new HelloMessageResult() { Result = "Client stream result!" };
         }
 
         public Task DuplexAsync(IAsyncRequestStream<HelloMessage> request, IAsyncResponseStream<HelloMessageResult> response)
@@ -31,7 +41,8 @@ namespace Kadder.Simple.Server
 
         public Task<HelloMessageResult> HelloAsync(HelloMessage message)
         {
-            throw new System.NotImplementedException();
+            var result = new HelloMessageResult() { Result = $"Hello, {message.Name}" };
+            return Task.FromResult(result);
         }
 
         public Task HelloAsync()

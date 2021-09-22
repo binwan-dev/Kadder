@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Kadder.Grpc.Client.Options;
+using Kadder.Utils;
 
 namespace Kadder.Grpc.Client.AspNetCore
 {
@@ -11,13 +12,12 @@ namespace Kadder.Grpc.Client.AspNetCore
             GrpcServicerProxyers = new List<Type>();
         }
 
-        internal IList<GrpcClientOptions> Clients { get; set; }
-
         internal IList<Type> GrpcServicerProxyers { get; set; }
 
         public ClientBuilder AddClient(GrpcClientOptions options)
         {
-            Clients.Add(options);
+            var servicerTypes = ServicerHelper.GetServicerTypes(options.Assemblies);
+            new GrpcClient(servicerTypes, options);
             return this;
         }
     }

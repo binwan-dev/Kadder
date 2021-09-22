@@ -2,7 +2,7 @@ using System;
 using Kadder.Utils;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Kadder.Grpc.Server.NetCore
+namespace Kadder.Utils
 {
     public class ObjectProvider : IObjectProvider
     {

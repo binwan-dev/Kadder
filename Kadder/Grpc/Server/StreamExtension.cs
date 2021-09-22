@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 using Kadder.Grpc.Server;
 using Kadder.Streaming;
 
-namespace Kadder.GrpcServer
+namespace Kadder.Grpc.Server
 {
     public static class ServerStreamExtension
     {

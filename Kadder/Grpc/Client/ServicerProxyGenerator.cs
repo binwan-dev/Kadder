@@ -150,7 +150,7 @@ namespace Kadder.Grpc.Client
             var method = generateMethodHead(ref classDescripter, methodInfo);
             method.Parameters.Add(new ParameterDescripter($"IAsyncRequestStream<{requestType.Name}>", "request"));
 
-            method.AppendCode($@"{resultCode}await {ClassServicerInvokerName}.ClientStreamAsync<{requestType.Name}, {returnType.Name}>(request, ""{servicerName}"", ""{methodName}"");
+            method.AppendCode($@"{resultCode}{ClassServicerInvokerName}.ClientStreamAsync<{requestType.Name}, {returnType.Name}>(request, ""{servicerName}"", ""{methodName}"");
             {Helper.GenerateReturnCode(returnType,true)}");
             method.SetReturnType(resultType);
 
@@ -171,7 +171,7 @@ namespace Kadder.Grpc.Client
             method.Parameters.Add(new ParameterDescripter(parameterType.Name, "request"));
             method.Parameters.Add(new ParameterDescripter($"IAsyncResponseStream<{responseType.Name}>", "response"));
 
-            method.AppendCode($@"await {ClassServicerInvokerName}.ServerStreamAsync<{parameterType.Name}, {responseType.Name}>({requestCode}response, ""{servicerName}"", ""{methodName}"");");
+            method.AppendCode($@"return {ClassServicerInvokerName}.ServerStream<{parameterType.Name}, {responseType.Name}>({requestCode}response, ""{servicerName}"", ""{methodName}"");");
             method.SetReturnType("Task");
 
             return method;
@@ -188,7 +188,7 @@ namespace Kadder.Grpc.Client
             method.Parameters.Add(new ParameterDescripter($"IAsyncRequestStream<{requestType.Name}>", "request"));
             method.Parameters.Add(new ParameterDescripter($"IAsyncResponseStream<{responseType.Name}>", "response"));
 
-            method.AppendCode($@"await {ClassServicerInvokerName}.DuplexStreamAsync<{requestType.Name}, {responseType.Name}>(request, response, ""{servicerName}"", ""{methodName}"");");
+            method.AppendCode($@"return {ClassServicerInvokerName}.DuplexStream<{requestType.Name}, {responseType.Name}>(request, response, ""{servicerName}"", ""{methodName}"");");
             method.SetReturnType("Task");
 
             return method;

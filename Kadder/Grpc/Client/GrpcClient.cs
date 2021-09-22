@@ -1,18 +1,62 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
+// using Kadder.Grpc.Client.Options;
+using Grpc.Core;
 using Kadder.Grpc.Client.Options;
 
 namespace Kadder.Grpc.Client
 {
     public class GrpcClient
     {
-        private readonly IList<Type> _servicerTypes;
-        private readonly IList<GrpcClientOptions> _clientOptions;
+        private static IDictionary<string, GrpcClient> _clientDict;
 
-        public GrpcClient(IList<Type> servicerTypes, IList<GrpcClientOptions> clientOptions)
+        static GrpcClient()
+        {
+            _clientDict = new Dictionary<string, GrpcClient>();
+        }
+
+        private readonly List<Type> _servicerTypes;
+        private readonly GrpcClientOptions _clientOptions;
+        private readonly IDictionary<string, ChannelInfo> _channels;
+
+        public GrpcClient(List<Type> servicerTypes, GrpcClientOptions options)
         {
             _servicerTypes = servicerTypes;
-            _clientOptions = clientOptions;
+            _clientOptions = options;
+            _channels = new Dictionary<string, ChannelInfo>();
+
+            foreach (var servicerType in servicerTypes)
+                ClientDict.Add(servicerType.FullName, this);
+        }
+
+        public static IDictionary<string, GrpcClient> ClientDict => _clientDict;
+
+        public IReadOnlyList<Type> ServicerTypes => _servicerTypes;
+
+        public virtual ChannelInfo GetChannel()
+        {
+            return _channels.FirstOrDefault().Value;
+        }
+
+        private void setChannels()
+        {
+            foreach (var channelOptions in _clientOptions.Addresses)
+            {
+                var channel = new ChannelInfo()
+                {
+                    Channel = new Channel(channelOptions.Address, channelOptions.Credentials),
+                    Options = channelOptions
+                };
+                _channels.Add(channelOptions.Address, channel);
+            }
+        }
+
+        public struct ChannelInfo
+        {
+            public Channel Channel { get; set; }
+
+            public GrpcChannelOptions Options { get; set; }
         }
     }
 }

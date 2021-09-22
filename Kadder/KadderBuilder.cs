@@ -1,11 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using Kadder.Utils;
 
 namespace Kadder
 {
     public class KadderBuilder
-    {
+    {   
         private readonly List<Assembly> _assembles;
         private readonly List<Type> _servicers;
 

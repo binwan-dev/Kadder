@@ -9,14 +9,13 @@ namespace Kadder.Grpc.Client.Options
     {
         public GrpcClientOptions()
         {
-            Addresses = new List<ChannelOption>();
+            Addresses = new List<GrpcChannelOptions>();
             Assemblies = new List<Assembly>();
-            AssemblyFullNames = new List<string>();
             ConnectSecondTimeout = 10;
             KeepLive = true;
         }
 
-        public IList<ChannelOption> Addresses { get; set; }
+        public IList<GrpcChannelOptions> Addresses { get; set; }
 
         /// <summary>
         /// Connection timeout (unit: s)
@@ -28,8 +27,12 @@ namespace Kadder.Grpc.Client.Options
         /// </summary>
         public bool KeepLive { get; set; }
 
-        public IList<Assembly> Assemblies { get; set; }
+        internal List<Assembly> Assemblies { get; set; }
 
-        public IList<string> AssemblyFullNames { get; set; }
+        public GrpcClientOptions AddAssembly(params Assembly[] assemblies)
+        {
+            Assemblies.AddRange(assemblies);
+            return this;
+        }
     }
 }

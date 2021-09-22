@@ -2,7 +2,7 @@ using Grpc.Core;
 
 namespace Kadder.Grpc.Client.Options
 {
-    public class ChannelOptions
+    public class GrpcChannelOptions
     {
         public string Address { get; set; }
 
