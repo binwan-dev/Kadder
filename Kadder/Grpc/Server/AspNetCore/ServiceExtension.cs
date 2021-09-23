@@ -1,8 +1,10 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using GenAssembly;
 using Grpc.Core;
+using Grpc.Core.Interceptors;
 using Kadder;
 using Kadder.Grpc.Server;
 using Kadder.Grpc.Server.AspNetCore;
@@ -19,24 +21,27 @@ namespace Microsoft.Extensions.DependencyInjection
             var server = new Server(builder.GrpcServerOptions.ChannelOptions);
             foreach (var port in builder.GrpcServerOptions.Ports)
                 server.Ports.Add(port);
+            foreach (var interceptor in builder.Interceptors)
+                services.AddSingleton(interceptor);
+
 
             var servicerTypes = ServicerHelper.GetServicerTypes(builder.Assemblies);
             var servicerProxyers = new ServicerProxyGenerator().Generate(servicerTypes);
             var namespaces = builder.GrpcServerOptions.PackageName;
-            
+
             var codeBuilder = new CodeBuilder(namespaces, namespaces);
             codeBuilder.CreateClass(servicerProxyers.ToArray());
             codeBuilder.AddAssemblyRefence(Assembly.GetExecutingAssembly())
                 .AddAssemblyRefence(typeof(ServerServiceDefinition).Assembly)
                 .AddAssemblyRefence(typeof(ServiceProviderServiceExtensions).Assembly)
                 .AddAssemblyRefence(typeof(Console).Assembly)
-                .AddAssemblyRefence(servicerTypes.Select(p=>p.Assembly).Distinct().ToArray())
+                .AddAssemblyRefence(servicerTypes.Select(p => p.Assembly).Distinct().ToArray())
                 .AddAssemblyRefence(typeof(KadderBuilder).Assembly)
                 .AddAssemblyRefence(typeof(GrpcServerOptions).Assembly)
                 .AddAssemblyRefence(builder.GetType().Assembly);
-            
-            var codeAssembly = codeBuilder.BuildAsync().Result;   
-            foreach(var servicerProxyer in servicerProxyers)
+
+            var codeAssembly = codeBuilder.BuildAsync().Result;
+            foreach (var servicerProxyer in servicerProxyers)
             {
                 namespaces = $"{servicerProxyer.Namespace}.{servicerProxyer.Name}";
                 var proxyerType = codeAssembly.Assembly.GetType(namespaces);
@@ -46,20 +51,28 @@ namespace Microsoft.Extensions.DependencyInjection
 
             services.AddSingleton(server);
             services.AddSingleton(builder);
-            services.AddSingleton<IBinarySerializer,ProtobufBinarySerializer>();
+            services.AddSingleton<IBinarySerializer, ProtobufBinarySerializer>();
             services.AddSingleton(typeof(KadderBuilder), builder);
-            services.AddSingleton<IObjectProvider,ObjectProvider>();
-            
+            services.AddSingleton<IObjectProvider, ObjectProvider>();
+
             return services;
         }
 
         public static IServiceProvider StartGrpcServer(this IServiceProvider provider)
         {
-            var builder=provider.GetService<GrpcServerBuilder>();
-            var server=provider.GetService<Server>();
+            var builder = provider.GetService<GrpcServerBuilder>();
+            var server = provider.GetService<Server>();
 
-            foreach(var serviceProxyer in builder.GrpcServicerProxyers)
-                server.Services.Add(((IGrpcServices)provider.GetService(serviceProxyer)).BindServices());
+            var intercetors = new Interceptor[builder.Interceptors.Count];
+            for (var i = 0; i < builder.Interceptors.Count; i++)
+                intercetors[i] = (Interceptor)provider.GetService(builder.Interceptors[i]);
+
+            foreach (var serviceProxyer in builder.GrpcServicerProxyers)
+            {
+                var definition = ((IGrpcServices)provider.GetService(serviceProxyer)).BindServices();
+                definition.Intercept(intercetors);
+                server.Services.Add(definition);
+            }
 
             server.Start();
 

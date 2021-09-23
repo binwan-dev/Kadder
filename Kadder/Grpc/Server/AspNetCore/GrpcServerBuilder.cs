@@ -8,10 +8,13 @@ namespace Kadder.Grpc.Server.AspNetCore
         public GrpcServerBuilder()
         {
             GrpcServicerProxyers = new List<Type>();
+            Interceptors = new List<Type>();
         }
 
         public GrpcServerOptions GrpcServerOptions { get; set; }
 
         internal IList<Type> GrpcServicerProxyers { get; set; }
+
+        public List<Type> Interceptors { get; set; }
     }
 }

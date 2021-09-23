@@ -6,9 +6,8 @@ using Kadder.Utils;
 namespace Kadder
 {
     public class KadderBuilder
-    {   
+    {
         private readonly List<Assembly> _assembles;
-        private readonly List<Type> _servicers;
 
         public KadderBuilder()
         {
