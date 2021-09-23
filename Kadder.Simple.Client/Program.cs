@@ -1,13 +1,13 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Threading.Tasks;
-using Kadder;
-using Kadder.Simple.Client;
 using Kadder.Simple.Server;
-using Kadder.Utilies;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using ProtoBuf;
+using Kadder.Grpc.Client;
+using Kadder.Streaming;
+using Kadder.Grpc.Client.Options;
+using Grpc.Core;
+using System.Threading;
 
 namespace Atlantis.Grpc.Simple.Client
 {
@@ -15,53 +15,76 @@ namespace Atlantis.Grpc.Simple.Client
     {
         static void Main(string[] args)
         {
-            var options = new GrpcClientOptions()
-            {
-                Host = "127.0.0.1",
-                Port = 13002,
-                NamespaceName = "Atlantis.Simple",
-                ServiceName = "AtlantisService",
-                ScanAssemblies = new string[]
-                {
-                    typeof(IPersonMessageServicer).Assembly.FullName
-                }
-            };
+            var reflectionTest = new ReflectTest();
+            reflectionTest.Test();
+            // Test().Wait();
+        }
 
-            IServiceCollection services = new ServiceCollection();
-            services.AddLogging(b => b.AddConsole());
-            services.AddTransient(typeof(ILogger<>), typeof(NullLogger<>));
-            services.AddKadderGrpcClient(builder =>
+        static async Task Test()
+        {
+            IServiceCollection servicers = new ServiceCollection();
+            servicers.AddLogging();
+            servicers.UseGrpcClient(builder =>
             {
-                builder.RegClient(options);
-                //builder.RegShareInterceptor<Kadder.Simple.Client.LoggerInterceptor>();
+                var clientOptions = new GrpcClientOptions();
+                clientOptions.Addresses.Add(new GrpcChannelOptions()
+                {
+                    Address = "127.0.0.1:3001",
+                    Credentials = ChannelCredentials.Insecure
+                });
+                clientOptions.AddAssembly(typeof(IAnimalMessageServicer).Assembly);
+
+                builder.AddClient(clientOptions);
             });
 
-            var provider = services.BuildServiceProvider();
-            provider.ApplyKadderGrpcClient();
-            var log = provider.GetService<ILogger<GrpcClient>>();
-            log.LogInformation("dd");
+            var provider = servicers.BuildServiceProvider();
+            var animalMessageServicer = provider.GetService<IAnimalMessageServicer>();
 
-            // TestInterceptor(provider);
+            // 1 unary & no parameter
+            await animalMessageServicer.HelloVoidAsync();
 
-            TestNumber(provider);
+            // 2 unary
+            var request = new HelloMessage() { Name = "Kadder" };
+            var result = await animalMessageServicer.HelloAsync(request);
+            Console.WriteLine(result.Result);
 
-            Console.ReadLine();
+            // 3 client stream
+            var requestStream = new AsyncRequestStream<HelloMessage>();
+            var clientResult = animalMessageServicer.ClientAsync(requestStream);
+            for (var i = 0; i < 10; i++)
+                await requestStream.WriteAsync(new HelloMessage() { Name = $"Kadder.ClientStream.{i}" });
+            result = await clientResult;
+            Console.WriteLine(result.Result);
 
-            // var channel = new Channel("127.0.0.1", 3002, ChannelCredentials.Insecure);
+            // 4 server stream
+            var responseStream = new AsyncResponseStream<HelloMessageResult>();
+            await animalMessageServicer.ServerAsync(request, responseStream);
+            var cancelToken = new CancellationToken();
+            while (await responseStream.MoveNextAsync(cancelToken))
+            {
+                result = responseStream.GetCurrent();
+                Console.WriteLine(result.Result);
+            }
 
-            // channel.ConnectAsync().Wait();
+            // 5 duplex stream
+            requestStream = new AsyncRequestStream<HelloMessage>();
+            responseStream = new AsyncResponseStream<HelloMessageResult>();
+            await animalMessageServicer.DuplexAsync(requestStream, responseStream);
+            for (var i = 0; i < 10; i++)
+            {
+                await requestStream.WriteAsync(new HelloMessage() { Name = $"Kadder.ClientStream.{i}" });
+                await responseStream.MoveNextAsync(cancelToken);
+                Console.WriteLine(result.Result);
+            }
 
-            // AtlantisServiceClient client=new AtlantisServiceClient(channel);
-            // 
-            // var result= client.Hello(message);
+        }
 
-            // // var serailizer=new ProtobufBinarySerializer();
-            // // var s=serailizer.Serialize(message);
-
-            // // foreach(var b in s)
-            // // {
-            // //     Console.Write($" {b}");
-            // }
+        public static IAsyncRequestStream<TRequest> change<TRequest>(IAsyncRequestStream<TRequest> request) where TRequest : class
+        {
+            var grpc = new AsyncRequestStream<TRequest>();
+            grpc.Name = "bbbb";
+            request = grpc;
+            return request;
         }
 
         // static void TestAI(ServiceProvider provider)

@@ -1,6 +1,7 @@
 using System;
+using System.Reflection;
 using System.Threading.Tasks;
-using Kadder.Middlewares;
+using Grpc.Core;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
@@ -15,21 +16,12 @@ namespace Kadder.Simple.Server
             var host=new Microsoft.Extensions.Hosting.HostBuilder()
                 .ConfigureServices((context,services)=>{
                     services.AddLogging();
-                    services.AddKadderGrpcServer(builder =>
+                    services.UseGrpcServer(builder=>
                     {
-                        builder.Options = new GrpcServerOptions()
-                            {
-                                Host = "0.0.0.0",
-                                Port = 13002,
-                                NamespaceName = "Atlantis.Simple",
-                                ServiceName = "AtlantisService",
-                                // ScanAssemblies = new string[]
-                                // {
-                                //     typeof(Program).Assembly.FullName
-                                // }
-                            };
-                        Console.WriteLine(builder.Options.ScanAssemblies[0]);
-                        builder.AddInterceptor<LoggerInterceptor>();
+                        builder.Assemblies.Add(Assembly.GetExecutingAssembly());
+                        builder.GrpcServerOptions=new GrpcServerOptions();
+                        builder.GrpcServerOptions.PackageName="Atlantis.Simple";
+                        builder.GrpcServerOptions.Ports.Add(new ServerPort("0.0.0.0",3001,ServerCredentials.Insecure));
                     });
                     services.AddScoped<IPersonMessageServicer, PersonMessageServicer>();
                     services.AddScoped<IAnimalMessageServicer, AnimalMessageServicer>();
@@ -41,22 +33,8 @@ namespace Kadder.Simple.Server
                     Console.WriteLine("Server is running...");
                 }).Build();
 
-            host.Services.StartKadderGrpc();
+            host.Services.StartGrpcServer();
             await host.RunAsync();
         }
     }
-
-    public class TestMiddleware : Middlewares.GrpcMiddlewareBase
-    {
-        public TestMiddleware(HandlerDelegateAsync next) : base(next)
-        {
-        }
-
-        protected override Task DoHandleAsync(GrpcContext context)
-        {
-            Console.WriteLine("heelo");
-            return Task.CompletedTask;
-        }
-    }
-
 }
