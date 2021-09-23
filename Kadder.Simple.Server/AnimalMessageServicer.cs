@@ -17,7 +17,7 @@ namespace Kadder.Simple.Server
 
         Task<HelloMessageResult> ClientAsync(IAsyncRequestStream<HelloMessage> request);
 
-        Task HelloAsync();
+        Task HelloVoidAsync();
     }
 
     public class AnimalMessageServicer : IAnimalMessageServicer
@@ -34,25 +34,36 @@ namespace Kadder.Simple.Server
             return new HelloMessageResult() { Result = "Client stream result!" };
         }
 
-        public Task DuplexAsync(IAsyncRequestStream<HelloMessage> request, IAsyncResponseStream<HelloMessageResult> response)
+        public async Task DuplexAsync(IAsyncRequestStream<HelloMessage> request, IAsyncResponseStream<HelloMessageResult> response)
         {
-            throw new System.NotImplementedException();
+            var token = new CancellationToken();
+            while (await request.MoveNextAsync(token))
+            {
+                var req = request.GetCurrent();
+                Console.WriteLine($"Requet: {req.Name} Type: {req.Type}");
+                await response.WriteAsync(new HelloMessageResult() { Result = "Server result Type: {req.Type}" });
+            }
         }
 
         public Task<HelloMessageResult> HelloAsync(HelloMessage message)
         {
-            var result = new HelloMessageResult() { Result = $"Hello, {message.Name}" };
+            var result = new HelloMessageResult() { Result = $"Server Result: {message.Name}" };
             return Task.FromResult(result);
         }
 
-        public Task HelloAsync()
+        public Task HelloVoidAsync()
         {
+            Console.WriteLine("Server void!");
             return HelloAsync(new HelloMessage());
         }
 
-        public Task ServerAsync(HelloMessage request, IAsyncResponseStream<HelloMessageResult> response)
+        public async Task ServerAsync(HelloMessage request, IAsyncResponseStream<HelloMessageResult> response)
         {
-            throw new System.NotImplementedException();
+            Console.WriteLine($"Requet: {request.Name} Type: {request.Type}");
+            for (var i = 0; i < 10; i++)
+            {
+                await response.WriteAsync(new HelloMessageResult() { Result = "Server result Type: {req.Type} Name: {request.Name}-{i}" });
+            }
         }
     }
 }

@@ -9,15 +9,13 @@ namespace Kadder.Grpc.Client.AspNetCore
     {
         public ClientBuilder()
         {
-            GrpcServicerProxyers = new List<Type>();
         }
-
-        internal IList<Type> GrpcServicerProxyers { get; set; }
 
         public ClientBuilder AddClient(GrpcClientOptions options)
         {
             var servicerTypes = ServicerHelper.GetServicerTypes(options.Assemblies);
             new GrpcClient(servicerTypes, options);
+            Assemblies.AddRange(options.Assemblies);
             return this;
         }
     }

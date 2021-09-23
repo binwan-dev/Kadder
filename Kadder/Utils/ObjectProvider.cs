@@ -1,5 +1,4 @@
 using System;
-using Kadder.Utils;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Kadder.Utils

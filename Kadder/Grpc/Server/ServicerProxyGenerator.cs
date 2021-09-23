@@ -44,7 +44,7 @@ namespace Kadder.Grpc.Server
 
                 classDescripter.CreateMember(generateMethod(ref classDescripter, method));
             }
-            classDescripter.CreateMember(generateBindServicesMethod(ref classDescripter));
+            classDescripter.CreateMember(generateBindServicesMethod(ref classDescripter, servicerType));
 
             return classDescripter;
         }
@@ -52,10 +52,10 @@ namespace Kadder.Grpc.Server
         #region class
         private ClassDescripter generateClass(Type servicerType)
         {
-            var servicerName = servicerType.Name;
+            var servicerName = $"KadderServer{servicerType.Name}";
             if (servicerName[0] == 'I')
                 servicerName = servicerName.Substring(1);
-            var namespaceName = $"{servicerType.Namespace}.GrpcServicers";
+            var namespaceName = $"{servicerType.Namespace}";
 
             var classDescripter = new ClassDescripter(servicerName, namespaceName)
                 .SetBaseType(typeof(IGrpcServices).Name)
@@ -239,7 +239,7 @@ namespace Kadder.Grpc.Server
         #endregion
 
         #region GrpcCallMethod
-        private MethodDescripter generateBindServicesMethod(ref ClassDescripter classDescripter)
+        private MethodDescripter generateBindServicesMethod(ref ClassDescripter classDescripter, Type servicerType)
         {
             var bindServicesMethod = new MethodDescripter("BindServices", classDescripter);
             bindServicesMethod.Access = AccessType.Public;
@@ -256,7 +256,7 @@ namespace Kadder.Grpc.Server
                     continue;
 
                 var callType = (CallType)int.Parse(fakeMethodTypeAttribute.Parameters[0]);
-                bindServicesMethod.AppendCode(generateBindServicesCode(classDescripter, method, callType));
+                bindServicesMethod.AppendCode(generateBindServicesCode(classDescripter, method, callType, servicerType));
 
                 method.Attributes.Remove(fakeMethodTypeAttribute);
             }
@@ -265,7 +265,7 @@ namespace Kadder.Grpc.Server
             return bindServicesMethod;
         }
 
-        private string generateBindServicesCode(ClassDescripter @class, MethodDescripter method, CallType callType)
+        private string generateBindServicesCode(ClassDescripter @class, MethodDescripter method, CallType callType, Type servicerType)
         {
             var callInfo = getCallInfo(callType, method);
             callInfo.RequestType = callInfo.RequestType.Replace("IAsyncStreamReader<", "").Replace("Task<", "").Replace(">", "");
@@ -274,7 +274,7 @@ namespace Kadder.Grpc.Server
             var code = new StringBuilder();
             code.Append($@"                .AddMethod(new Method<{callInfo.RequestType}, {callInfo.ResponseType}>(
                     {callInfo.MethodType},
-                    ""{@class.Namespace}.{@class.Name}"",
+                    ""{servicerType.FullName}"",
                     ""{method.Name}"",
                     new Marshaller<{callInfo.RequestType}>(
                         {ClassBinarySerializerName}.Serialize,

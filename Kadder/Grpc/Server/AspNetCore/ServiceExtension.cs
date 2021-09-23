@@ -7,7 +7,6 @@ using Kadder;
 using Kadder.Grpc.Server;
 using Kadder.Grpc.Server.AspNetCore;
 using Kadder.Utils;
-using Kadder.Grpc.Server.NetCore;
 
 namespace Microsoft.Extensions.DependencyInjection
 {

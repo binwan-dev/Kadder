@@ -1,13 +1,8 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Threading.Tasks;
-using Kadder;
-using Kadder.Simple.Client;
 using Kadder.Simple.Server;
-using Kadder.Utilies;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using ProtoBuf;
 using Kadder.Grpc.Client;
 using Kadder.Streaming;
 using Kadder.Grpc.Client.Options;
@@ -18,9 +13,17 @@ namespace Atlantis.Grpc.Simple.Client
 {
     class Program
     {
-        static async void Main(string[] args)
+        static void Main(string[] args)
+        {
+            var reflectionTest = new ReflectTest();
+            reflectionTest.Test();
+            // Test().Wait();
+        }
+
+        static async Task Test()
         {
             IServiceCollection servicers = new ServiceCollection();
+            servicers.AddLogging();
             servicers.UseGrpcClient(builder =>
             {
                 var clientOptions = new GrpcClientOptions();
@@ -29,7 +32,7 @@ namespace Atlantis.Grpc.Simple.Client
                     Address = "127.0.0.1:3001",
                     Credentials = ChannelCredentials.Insecure
                 });
-                clientOptions.AddAssembly(typeof(Program).Assembly);
+                clientOptions.AddAssembly(typeof(IAnimalMessageServicer).Assembly);
 
                 builder.AddClient(clientOptions);
             });
@@ -38,7 +41,7 @@ namespace Atlantis.Grpc.Simple.Client
             var animalMessageServicer = provider.GetService<IAnimalMessageServicer>();
 
             // 1 unary & no parameter
-            await animalMessageServicer.HelloAsync();
+            await animalMessageServicer.HelloVoidAsync();
 
             // 2 unary
             var request = new HelloMessage() { Name = "Kadder" };
@@ -64,10 +67,10 @@ namespace Atlantis.Grpc.Simple.Client
             }
 
             // 5 duplex stream
-            requestStream=new AsyncRequestStream<HelloMessage>();
-            responseStream=new AsyncResponseStream<HelloMessageResult>();
+            requestStream = new AsyncRequestStream<HelloMessage>();
+            responseStream = new AsyncResponseStream<HelloMessageResult>();
             await animalMessageServicer.DuplexAsync(requestStream, responseStream);
-            for(var i=0;i<10;i++)
+            for (var i = 0; i < 10; i++)
             {
                 await requestStream.WriteAsync(new HelloMessage() { Name = $"Kadder.ClientStream.{i}" });
                 await responseStream.MoveNextAsync(cancelToken);

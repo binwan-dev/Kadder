@@ -21,7 +21,7 @@ namespace Kadder.Simple.Client
             throw new System.NotImplementedException();
         }
 
-        public Task HelloAsync()
+        public Task HelloVoidAsync()
         {
             throw new System.NotImplementedException();
         }

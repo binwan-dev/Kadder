@@ -19,8 +19,8 @@ namespace Microsoft.Extensions.DependencyInjection
 
             var servicerTypes = ServicerHelper.GetServicerTypes(builder.Assemblies);
             var servicerProxyers = new ServicerProxyGenerator().Generate(servicerTypes);
-            var namespaces = builder.GrpcServerOptions.PackageName;
 
+            var namespaces = "Kadder.Grpc.Client.Servicer";
             var codeBuilder = new CodeBuilder(namespaces, namespaces);
             codeBuilder.CreateClass(servicerProxyers.ToArray());
             codeBuilder.AddAssemblyRefence(Assembly.GetExecutingAssembly())
@@ -33,12 +33,15 @@ namespace Microsoft.Extensions.DependencyInjection
                 .AddAssemblyRefence(builder.GetType().Assembly);
 
             var codeAssembly = codeBuilder.BuildAsync().Result;
+            var servicerTypeDict = servicerTypes.ToDictionary(p => p.FullName);
             foreach (var servicerProxyer in servicerProxyers)
             {
                 namespaces = $"{servicerProxyer.Namespace}.{servicerProxyer.Name}";
                 var proxyerType = codeAssembly.Assembly.GetType(namespaces);
-                services.AddSingleton(proxyerType);
-                builder.GrpcServicerProxyers.Add(proxyerType);
+                var servicerType = proxyerType.BaseType;
+                if (servicerType == typeof(object))
+                    servicerType = servicerTypeDict[proxyerType.GetInterfaces()[0].FullName];
+                services.AddSingleton(servicerType, proxyerType);
             }
 
             services.AddSingleton(builder);

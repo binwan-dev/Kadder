@@ -26,6 +26,8 @@ namespace Kadder.Grpc.Client
             _clientOptions = options;
             _channels = new Dictionary<string, ChannelInfo>();
 
+            setChannels();
+
             foreach (var servicerType in servicerTypes)
                 ClientDict.Add(servicerType.FullName, this);
         }
