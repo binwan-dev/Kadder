@@ -1,8 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-// using Kadder.Grpc.Client.Options;
+using System.Threading.Tasks;
 using Grpc.Core;
+using Grpc.Core.Interceptors;
 using Kadder.Grpc.Client.Options;
 
 namespace Kadder.Grpc.Client
@@ -26,7 +27,8 @@ namespace Kadder.Grpc.Client
             _clientOptions = options;
             _channels = new Dictionary<string, ChannelInfo>();
 
-            setChannels();
+            foreach (var opt in options.Addresses)
+                AddChannel(opt);
 
             foreach (var servicerType in servicerTypes)
                 ClientDict.Add(servicerType.FullName, this);
@@ -36,22 +38,35 @@ namespace Kadder.Grpc.Client
 
         public IReadOnlyList<Type> ServicerTypes => _servicerTypes;
 
+        public GrpcClientOptions Options => _clientOptions;
+
         public virtual ChannelInfo GetChannel()
+            => _channels.FirstOrDefault().Value;
+
+        public void AddChannel(GrpcChannelOptions options)
+            => _channels.Add(options.Address, setChannels(options));
+
+
+        public async Task RemoveChannelAsync(string address)
         {
-            return _channels.FirstOrDefault().Value;
+            if (!_channels.TryGetValue(address, out ChannelInfo channel))
+                return;
+
+            channel.Invoker = null;
+            await channel.Channel.ShutdownAsync();
+            channel.Channel = null;
         }
 
-        private void setChannels()
+        private ChannelInfo setChannels(GrpcChannelOptions options)
         {
-            foreach (var channelOptions in _clientOptions.Addresses)
+            var channel = new ChannelInfo()
             {
-                var channel = new ChannelInfo()
-                {
-                    Channel = new Channel(channelOptions.Address, channelOptions.Credentials),
-                    Options = channelOptions
-                };
-                _channels.Add(channelOptions.Address, channel);
-            }
+                Channel = new Channel(options.Address, options.Credentials),
+                Options = options
+            };
+            channel.Invoker = channel.Channel.CreateCallInvoker();
+            channel.Invoker.Intercept(_clientOptions.Interceptors.ToArray());
+            return channel;
         }
 
         public struct ChannelInfo
@@ -59,6 +74,8 @@ namespace Kadder.Grpc.Client
             public Channel Channel { get; set; }
 
             public GrpcChannelOptions Options { get; set; }
+
+            public CallInvoker Invoker { get; set; }
         }
     }
 }

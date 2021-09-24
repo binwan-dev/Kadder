@@ -1,3 +1,4 @@
+using System.Linq;
 using System;
 using System.Collections.Generic;
 using Kadder.Grpc.Client.Options;
@@ -7,9 +8,14 @@ namespace Kadder.Grpc.Client.AspNetCore
 {
     public class ClientBuilder : KadderBuilder
     {
+        public const string ConfigurationKeyName = "GrpcClient";
+
         public ClientBuilder()
         {
+            Clients = new List<GrpcClient>();
         }
+
+        public List<GrpcClient> Clients { get; set; }
 
         public ClientBuilder AddClient(GrpcClientOptions options)
         {

@@ -19,9 +19,9 @@ namespace Kadder.Simple.Server
                     services.UseGrpcServer(builder=>
                     {
                         builder.Assemblies.Add(Assembly.GetExecutingAssembly());
-                        builder.GrpcServerOptions=new GrpcServerOptions();
-                        builder.GrpcServerOptions.PackageName="Atlantis.Simple";
-                        builder.GrpcServerOptions.Ports.Add(new ServerPort("0.0.0.0",3001,ServerCredentials.Insecure));
+                        builder.Options=new GrpcServerOptions();
+                        builder.Options.PackageName="Atlantis.Simple";
+                        builder.Options.Ports.Add(new ServerPort("0.0.0.0",3001,ServerCredentials.Insecure));
                     });
                     services.AddScoped<IPersonMessageServicer, PersonMessageServicer>();
                     services.AddScoped<IAnimalMessageServicer, AnimalMessageServicer>();

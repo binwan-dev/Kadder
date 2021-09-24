@@ -9,7 +9,7 @@ using Kadder.Utils;
 namespace Kadder.Grpc.Client
 {
     public class ServicerInvoker
-    {   
+    {
         private readonly IBinarySerializer _serializer;
         private readonly ConcurrentDictionary<string, IMethod> _methods;
 

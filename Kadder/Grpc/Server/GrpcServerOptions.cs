@@ -8,9 +8,10 @@ namespace Kadder
     {
         public GrpcServerOptions()
         {
+            PackageName = string.Empty;
             IsGeneralProtoFile = true;
             ChannelOptions = new List<ChannelOption>();
-            Ports = new List<ServerPort>();
+            Ports = new List<GrpcServerPort>();
         }
 
         public string PackageName { get; set; }
@@ -19,7 +20,26 @@ namespace Kadder
 
         public List<ChannelOption> ChannelOptions { get; }
 
-        public List<ServerPort> Ports { get; }
+        public List<GrpcServerPort> Ports { get; }
 
+    }
+
+    public class GrpcServerPort
+    {
+        public GrpcServerPort()
+        {
+            Name = string.Empty;
+            Host = "0.0.0.0";
+            Port = 1666;
+            Credentials = ServerCredentials.Insecure;
+        }
+
+        public string Name { get; set; }
+
+        public string Host { get; set; }
+
+        public int Port { get; set; }
+
+        public ServerCredentials Credentials { get; set; }
     }
 }
