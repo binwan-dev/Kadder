@@ -22,6 +22,8 @@ namespace Kadder.Grpc.Client.AspNetCore
         public ClientBuilder()
         {
             Clients = new List<GrpcClient>();
+            ClientOptions = new List<GrpcClientOptions>();
+            ServicerTypes = new List<Type>();
         }
 
         /// <summary>
@@ -49,7 +51,7 @@ namespace Kadder.Grpc.Client.AspNetCore
                 options.Assemblies.Add(Assembly.Load(assemblyName));
 
             var servicerTypes = ServicerHelper.GetServicerTypes(options.Assemblies);
-            new GrpcClient(servicerTypes, options);
+            Clients.Add(new GrpcClient(servicerTypes, options));
             Assemblies.AddRange(options.Assemblies);
             ServicerTypes.AddRange(servicerTypes);
             return this;

@@ -8,6 +8,7 @@ using Kadder.Streaming;
 using Kadder.Grpc.Client.Options;
 using Grpc.Core;
 using System.Threading;
+using Microsoft.Extensions.Hosting;
 
 namespace Atlantis.Grpc.Simple.Client
 {
@@ -15,30 +16,23 @@ namespace Atlantis.Grpc.Simple.Client
     {
         static void Main(string[] args)
         {
-            var reflectionTest = new ReflectTest();
-            reflectionTest.Test();
-            // Test().Wait();
+            Test().Wait();
         }
 
         static async Task Test()
         {
-            IServiceCollection servicers = new ServiceCollection();
-            servicers.AddLogging();
-            servicers.UseGrpcClient(builder =>
-            {
-                var clientOptions = new GrpcClientOptions();
-                clientOptions.Addresses.Add(new GrpcChannelOptions()
+            var host = Microsoft.Extensions.Hosting.Host.CreateDefaultBuilder()
+                .UseEnvironment("Development")
+                .UseGrpcClient((context, servicers, builder) =>
                 {
-                    Address = "127.0.0.1:3001",
-                    Credentials = ChannelCredentials.Insecure
-                });
-                clientOptions.AddAssembly(typeof(IAnimalMessageServicer).Assembly);
+                    Console.WriteLine(builder.ClientOptions.Count);
+                })
+                .Build();
 
-                builder.AddClient(clientOptions);
-            });
-
-            var provider = servicers.BuildServiceProvider();
+            var provider = host.Services;
             var animalMessageServicer = provider.GetService<IAnimalMessageServicer>();
+
+            return;
 
             // 1 unary & no parameter
             await animalMessageServicer.HelloVoidAsync();
