@@ -283,7 +283,7 @@ namespace Kadder.Grpc.Server
             var code = new StringBuilder();
             code.Append($@"                .AddMethod(new Method<{callInfo.RequestType}, {callInfo.ResponseType}>(
                     {callInfo.MethodType},
-                    ""{servicerType.FullName}"",
+                    ""{@class.Namespace}.{@class.Name}"",
                     ""{method.Name}"",
                     new Marshaller<{callInfo.RequestType}>(
                         {ClassBinarySerializerName}.Serialize,

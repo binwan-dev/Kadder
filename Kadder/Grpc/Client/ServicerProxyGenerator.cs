@@ -134,7 +134,7 @@ namespace Kadder.Grpc.Client
         {
             var resultCode = Helper.GenerateAwaitResultCode(returnType);
             var resultType = generateRpcResponseType(returnType);
-            var servicerName = methodInfo.DeclaringType.FullName;
+            var servicerName = $"{classDescripter.Namespace}.{classDescripter.Name}";
             var methodName = methodInfo.Name.Replace("Async", "");
 
             var method = generateMethodHead(ref classDescripter, methodInfo);
@@ -152,7 +152,7 @@ namespace Kadder.Grpc.Client
 
         private MethodDescripter generateClientStreamRpcMethod(ref ClassDescripter classDescripter, MethodInfo methodInfo, Type parameterType, Type returnType)
         {
-            var servicerName = methodInfo.DeclaringType.FullName;
+            var servicerName = $"{classDescripter.Namespace}.{classDescripter.Name}";
             var resultCode = Helper.GenerateAwaitResultCode(returnType);
             var resultType = generateRpcResponseType(returnType);
             var methodName = methodInfo.Name.Replace("Async", "");
@@ -170,7 +170,7 @@ namespace Kadder.Grpc.Client
 
         private MethodDescripter generateServerStreamRpcMethod(ref ClassDescripter classDescripter, MethodInfo methodInfo, Type parameterType, Type returnType)
         {
-            var servicerName = methodInfo.DeclaringType.FullName;
+            var servicerName = $"{classDescripter.Namespace}.{classDescripter.Name}";
             var requestCode = Helper.GenerateRequestCode(parameterType);
             var methodName = methodInfo.Name.Replace("Async", "");
             var responseType = returnType.GenericTypeArguments[0];
@@ -190,7 +190,7 @@ namespace Kadder.Grpc.Client
 
         private MethodDescripter generateDuplexStreamRpcMethod(ref ClassDescripter classDescripter, MethodInfo methodInfo, Type parameterType, Type returnType)
         {
-            var servicerName = methodInfo.DeclaringType.FullName;
+            var servicerName = $"{classDescripter.Namespace}.{classDescripter.Name}";
             var methodName = methodInfo.Name.Replace("Async", "");
             var requestType = parameterType.GenericTypeArguments[0];
             var responseType = returnType.GenericTypeArguments[0];

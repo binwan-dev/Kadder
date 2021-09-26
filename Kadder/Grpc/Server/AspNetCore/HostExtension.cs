@@ -34,9 +34,8 @@ namespace Microsoft.Extensions.Hosting
 
                 var servicerTypes = ServicerHelper.GetServicerTypes(builder.Assemblies);
                 var servicerProxyers = new ServicerProxyGenerator(builder.Options.PackageName, servicerTypes).Generate();
-                var namespaces = builder.Options.PackageName;
 
-                var codeBuilder = new CodeBuilder(namespaces, namespaces);
+                var codeBuilder = new CodeBuilder("Kadder.Grpc.Server");
                 codeBuilder.CreateClass(servicerProxyers.ToArray());
                 codeBuilder.AddAssemblyRefence(Assembly.GetExecutingAssembly())
                     .AddAssemblyRefence(typeof(ServerServiceDefinition).Assembly)
@@ -50,7 +49,7 @@ namespace Microsoft.Extensions.Hosting
                 var codeAssembly = codeBuilder.BuildAsync().Result;
                 foreach (var servicerProxyer in servicerProxyers)
                 {
-                    namespaces = $"{servicerProxyer.Namespace}.{servicerProxyer.Name}";
+                    var namespaces = $"{servicerProxyer.Namespace}.{servicerProxyer.Name}";
                     var proxyerType = codeAssembly.Assembly.GetType(namespaces);
                     services.AddSingleton(proxyerType);
                     builder.GrpcServicerProxyers.Add(proxyerType);
