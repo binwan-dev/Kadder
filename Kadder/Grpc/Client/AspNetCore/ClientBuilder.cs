@@ -44,7 +44,7 @@ namespace Kadder.Grpc.Client.AspNetCore
         public ClientBuilder AddClient(GrpcClientOptions options)
         {
             foreach (var assemblyName in options.AssemblyNames)
-                options.Assemblies.Add(Assembly.LoadFrom(assemblyName));
+                options.Assemblies.Add(Assembly.Load(assemblyName));
 
             var servicerTypes = ServicerHelper.GetServicerTypes(options.Assemblies);
             new GrpcClient(servicerTypes, options);

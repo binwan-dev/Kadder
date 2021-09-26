@@ -29,6 +29,9 @@ namespace Microsoft.Extensions.Hosting
                 foreach (var interceptor in builder.Interceptors)
                     services.AddSingleton(interceptor);
 
+                foreach (var assemblyName in builder.AssemblyNames)
+                    builder.Assemblies.Add(Assembly.Load(assemblyName));
+
                 var servicerTypes = ServicerHelper.GetServicerTypes(builder.Assemblies);
                 var servicerProxyers = new ServicerProxyGenerator(builder.Options.PackageName, servicerTypes).Generate();
                 var namespaces = builder.Options.PackageName;

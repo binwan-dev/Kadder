@@ -1,3 +1,4 @@
+using System.Reflection;
 using System;
 using System.Collections.Generic;
 
@@ -10,6 +11,7 @@ namespace Kadder.Grpc.Server.AspNetCore
             GrpcServicerProxyers = new List<Type>();
             Interceptors = new List<Type>();
             Options = new GrpcServerOptions();
+            AssemblyNames = new List<string>();
         }
 
         public GrpcServerOptions Options { get; set; }
@@ -17,5 +19,7 @@ namespace Kadder.Grpc.Server.AspNetCore
         internal IList<Type> GrpcServicerProxyers { get; set; }
 
         public List<Type> Interceptors { get; set; }
+
+        public List<string> AssemblyNames { get; set; }
     }
 }
