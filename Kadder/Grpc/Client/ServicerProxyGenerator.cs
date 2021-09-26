@@ -51,9 +51,7 @@ namespace Kadder.Grpc.Client
         private ClassDescripter generateClass(Type servicerType)
         {
             var servicerName = $"KadderClient{servicerType.Name}";
-            var namespaceName = $"{servicerType.Namespace}";
-            if (!string.IsNullOrWhiteSpace(_packageName))
-                namespaceName = _packageName;
+            var namespaceName = getNamespaceName(servicerType);
 
             var classDescripter = new ClassDescripter(servicerName, namespaceName)
                 .SetBaseType(servicerType.Name)
@@ -134,7 +132,7 @@ namespace Kadder.Grpc.Client
         {
             var resultCode = Helper.GenerateAwaitResultCode(returnType);
             var resultType = generateRpcResponseType(returnType);
-            var servicerName = $"{classDescripter.Namespace}.{classDescripter.Name}";
+            var servicerName = getServicerName(methodInfo.DeclaringType);
             var methodName = methodInfo.Name.Replace("Async", "");
 
             var method = generateMethodHead(ref classDescripter, methodInfo);
@@ -152,7 +150,7 @@ namespace Kadder.Grpc.Client
 
         private MethodDescripter generateClientStreamRpcMethod(ref ClassDescripter classDescripter, MethodInfo methodInfo, Type parameterType, Type returnType)
         {
-            var servicerName = $"{classDescripter.Namespace}.{classDescripter.Name}";
+            var servicerName = getServicerName(methodInfo.DeclaringType);
             var resultCode = Helper.GenerateAwaitResultCode(returnType);
             var resultType = generateRpcResponseType(returnType);
             var methodName = methodInfo.Name.Replace("Async", "");
@@ -170,7 +168,7 @@ namespace Kadder.Grpc.Client
 
         private MethodDescripter generateServerStreamRpcMethod(ref ClassDescripter classDescripter, MethodInfo methodInfo, Type parameterType, Type returnType)
         {
-            var servicerName = $"{classDescripter.Namespace}.{classDescripter.Name}";
+            var servicerName = getServicerName(methodInfo.DeclaringType);
             var requestCode = Helper.GenerateRequestCode(parameterType);
             var methodName = methodInfo.Name.Replace("Async", "");
             var responseType = returnType.GenericTypeArguments[0];
@@ -190,7 +188,7 @@ namespace Kadder.Grpc.Client
 
         private MethodDescripter generateDuplexStreamRpcMethod(ref ClassDescripter classDescripter, MethodInfo methodInfo, Type parameterType, Type returnType)
         {
-            var servicerName = $"{classDescripter.Namespace}.{classDescripter.Name}";
+            var servicerName = getServicerName(methodInfo.DeclaringType);
             var methodName = methodInfo.Name.Replace("Async", "");
             var requestType = parameterType.GenericTypeArguments[0];
             var responseType = returnType.GenericTypeArguments[0];
@@ -286,5 +284,21 @@ namespace Kadder.Grpc.Client
             return bindServicesMethod;
         }
         #endregion
+
+        private string getNamespaceName(Type servicerType)
+        {
+            var namespaceName = servicerType.Namespace;
+            if (!string.IsNullOrWhiteSpace(_packageName))
+                namespaceName = _packageName;
+            return namespaceName;
+        }
+
+        private string getServicerName(Type servicerType)
+        {
+            var servicerName = servicerType.FullName;
+            if (!string.IsNullOrWhiteSpace(_packageName))
+                servicerName = $"{_packageName}.{servicerType.Name}";
+            return servicerName;
+        }
     }
 }
