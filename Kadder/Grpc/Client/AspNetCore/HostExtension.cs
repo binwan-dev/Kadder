@@ -21,30 +21,28 @@ namespace Microsoft.Extensions.Hosting
                 var builder = context.Configuration.GetSection(configurationKeyName).Get<ClientBuilder>() ?? new ClientBuilder();
                 builderAction?.Invoke(context, services, builder);
 
-                var servicerTypes = ServicerHelper.GetServicerTypes(builder.Assemblies);
-                var servicerProxyers = new ServicerProxyGenerator().Generate(servicerTypes);
-
-                var namespaces = "Kadder.Grpc.Client.Servicer";
-                var codeBuilder = new CodeBuilder(namespaces, namespaces);
-                codeBuilder.CreateClass(servicerProxyers.ToArray());
+                var codeBuilder = new CodeBuilder("CodeGenerate");
+                foreach (var client in builder.Clients)
+                {
+                    codeBuilder.CreateClass(new ServicerProxyGenerator(client.Options.PackageName, client.ServicerTypes.ToList()).Generate().ToArray());
+                    codeBuilder.AddAssemblyRefence(client.Options.Assemblies.ToArray());
+                }
                 codeBuilder.AddAssemblyRefence(Assembly.GetExecutingAssembly())
                     .AddAssemblyRefence(typeof(ServerServiceDefinition).Assembly)
                     .AddAssemblyRefence(typeof(ServiceProviderServiceExtensions).Assembly)
                     .AddAssemblyRefence(typeof(Console).Assembly)
-                    .AddAssemblyRefence(servicerTypes.Select(p => p.Assembly).Distinct().ToArray())
                     .AddAssemblyRefence(typeof(KadderBuilder).Assembly)
                     .AddAssemblyRefence(typeof(GrpcServerOptions).Assembly)
                     .AddAssemblyRefence(builder.GetType().Assembly);
 
                 var codeAssembly = codeBuilder.BuildAsync().Result;
-                var servicerTypeDict = servicerTypes.ToDictionary(p => p.FullName);
-                foreach (var servicerProxyer in servicerProxyers)
+                foreach (var servicerProxyer in codeBuilder.Classes)
                 {
-                    namespaces = $"{servicerProxyer.Namespace}.{servicerProxyer.Name}";
+                    var namespaces = $"{servicerProxyer.Namespace}.{servicerProxyer.Name}";
                     var proxyerType = codeAssembly.Assembly.GetType(namespaces);
                     var servicerType = proxyerType.BaseType;
                     if (servicerType == typeof(object))
-                        servicerType = servicerTypeDict[proxyerType.GetInterfaces()[0].FullName];
+                        servicerType = builder.ServicerTypes.FirstOrDefault(p => p.FullName == proxyerType.GetInterfaces()[0].FullName);
                     services.AddSingleton(servicerType, proxyerType);
                 }
 

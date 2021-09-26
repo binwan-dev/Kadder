@@ -15,10 +15,19 @@ namespace Kadder.Grpc.Client
     {
         public const string ClassServicerInvokerName = "_invoker";
 
-        public IList<ClassDescripter> Generate(IList<Type> servicerTypes)
+        private readonly string _packageName;
+        private readonly IList<Type> _servicerTypes;
+
+        public ServicerProxyGenerator(string packageName, IList<Type> servicerTypes)
+        {
+            _packageName = packageName;
+            _servicerTypes = servicerTypes;
+        }
+
+        public IList<ClassDescripter> Generate()
         {
             var proxyerDescripters = new List<ClassDescripter>();
-            foreach (var servicerType in servicerTypes)
+            foreach (var servicerType in _servicerTypes)
                 proxyerDescripters.Add(generate(servicerType));
 
             return proxyerDescripters;
@@ -42,9 +51,9 @@ namespace Kadder.Grpc.Client
         private ClassDescripter generateClass(Type servicerType)
         {
             var servicerName = $"KadderClient{servicerType.Name}";
-            if (servicerName[0] == 'I')
-                servicerName = servicerName.Substring(1);
             var namespaceName = $"{servicerType.Namespace}";
+            if (!string.IsNullOrWhiteSpace(_packageName))
+                namespaceName = _packageName;
 
             var classDescripter = new ClassDescripter(servicerName, namespaceName)
                 .SetBaseType(servicerType.Name)

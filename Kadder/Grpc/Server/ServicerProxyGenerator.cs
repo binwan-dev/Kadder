@@ -20,11 +20,20 @@ namespace Kadder.Grpc.Server
         public const string ClassBinarySerializerName = "_binarySerializer";
         public const string FakeCallTypeAttributeName = "FakeCallType";
 
-        public List<ClassDescripter> Generate(List<Type> servicerTypes)
+        private readonly List<Type> _servicerTypes;
+        private readonly string _packageName;
+
+        public ServicerProxyGenerator(string packageName, List<Type> servicerTypes)
+        {
+            _packageName = packageName;
+            _servicerTypes = servicerTypes;
+        }
+
+        public List<ClassDescripter> Generate()
         {
             var classDescripterList = new List<ClassDescripter>();
 
-            foreach (var servicerType in servicerTypes)
+            foreach (var servicerType in _servicerTypes)
                 classDescripterList.Add(generate(servicerType));
 
             return classDescripterList;
@@ -53,9 +62,9 @@ namespace Kadder.Grpc.Server
         private ClassDescripter generateClass(Type servicerType)
         {
             var servicerName = $"KadderServer{servicerType.Name}";
-            if (servicerName[0] == 'I')
-                servicerName = servicerName.Substring(1);
-            var namespaceName = $"{servicerType.Namespace}";
+            var namespaceName = servicerType.Namespace;
+            if (!string.IsNullOrWhiteSpace(_packageName))
+                namespaceName = _packageName;
 
             var classDescripter = new ClassDescripter(servicerName, namespaceName)
                 .SetBaseType(typeof(IGrpcServices).Name)

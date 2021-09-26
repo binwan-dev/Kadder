@@ -30,7 +30,7 @@ namespace Microsoft.Extensions.Hosting
                     services.AddSingleton(interceptor);
 
                 var servicerTypes = ServicerHelper.GetServicerTypes(builder.Assemblies);
-                var servicerProxyers = new ServicerProxyGenerator().Generate(servicerTypes);
+                var servicerProxyers = new ServicerProxyGenerator(builder.Options.PackageName, servicerTypes).Generate();
                 var namespaces = builder.Options.PackageName;
 
                 var codeBuilder = new CodeBuilder(namespaces, namespaces);
