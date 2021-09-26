@@ -28,13 +28,15 @@ namespace Kadder.Grpc.Client.AspNetCore
         /// GrpcClient list
         /// </summary>
         /// <value></value>
-        public List<GrpcClient> Clients { get; set; }
+        internal List<GrpcClient> Clients { get; set; }
 
         /// <summary>
         /// Grpc servicer list
         /// </summary>
         /// <value></value>
         internal List<Type> ServicerTypes { get; set; }
+
+        public List<GrpcClientOptions> ClientOptions { get; set; }
 
         /// <summary>
         /// Add new grpc client for servicers.
@@ -50,6 +52,13 @@ namespace Kadder.Grpc.Client.AspNetCore
             new GrpcClient(servicerTypes, options);
             Assemblies.AddRange(options.Assemblies);
             ServicerTypes.AddRange(servicerTypes);
+            return this;
+        }
+
+        internal ClientBuilder SetByConfiguration()
+        {
+            foreach (var options in ClientOptions)
+                AddClient(options);
             return this;
         }
     }

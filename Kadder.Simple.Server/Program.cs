@@ -13,15 +13,16 @@ namespace Kadder.Simple.Server
         {
             Console.WriteLine(Environment.CurrentDirectory);
 
-            var host=new Microsoft.Extensions.Hosting.HostBuilder()
-                .ConfigureServices((context,services)=>{
+            var host = new Microsoft.Extensions.Hosting.HostBuilder()
+                .ConfigureServices((context, services) =>
+                {
                     services.AddLogging();
-                    services.UseGrpcServer(builder=>
+                    services.UseGrpcServer(builder =>
                     {
                         builder.Assemblies.Add(Assembly.GetExecutingAssembly());
-                        builder.Options=new GrpcServerOptions();
-                        builder.Options.PackageName="Atlantis.Simple";
-                        builder.Options.Ports.Add(new ServerPort("0.0.0.0",3001,ServerCredentials.Insecure));
+                        builder.Options = new GrpcServerOptions();
+                        builder.Options.PackageName = "Atlantis.Simple";
+                        builder.Options.Ports.Add(new ServerPort("0.0.0.0", 3001, ServerCredentials.Insecure));
                     });
                     services.AddScoped<IPersonMessageServicer, PersonMessageServicer>();
                     services.AddScoped<IAnimalMessageServicer, AnimalMessageServicer>();
