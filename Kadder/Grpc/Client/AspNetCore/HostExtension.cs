@@ -1,3 +1,8 @@
+/*
+ * @Description: Registr grpc client for netcore project
+ * @Author: Bin Wan
+ * @Email: email@wanbin.tech
+ */
 using System;
 using System.Linq;
 using System.Reflection;
@@ -14,6 +19,13 @@ namespace Microsoft.Extensions.Hosting
 {
     public static class KadderGrpcClientHostExtension
     {
+        /// <summary>
+        /// Register GrpcClient
+        /// </summary>
+        /// <param name="hostBuilder">The host builder context</param>
+        /// <param name="builderAction">The client options builder action</param>
+        /// <param name="configurationKeyName">The client optios key in appsetting.json</param>
+        /// <returns></returns>
         public static IHostBuilder UseGrpcClient(this IHostBuilder hostBuilder, Action<HostBuilderContext, IServiceCollection, ClientBuilder> builderAction = null, string configurationKeyName = "GrpcClient")
         {
             hostBuilder.ConfigureServices((context, services) =>

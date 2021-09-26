@@ -1,3 +1,8 @@
+/*
+ * @Description: Grpc client builder class
+ * @Author: Bin Wan
+ * @Email: email@wanbin.tech
+ */
 using System.Reflection;
 using System.Linq;
 using System;
@@ -9,6 +14,9 @@ namespace Kadder.Grpc.Client.AspNetCore
 {
     public class ClientBuilder : KadderBuilder
     {
+        /// <summary>
+        /// Default configuration key in appsetting.json file
+        /// </summary>
         public const string ConfigurationKeyName = "GrpcClient";
 
         public ClientBuilder()
@@ -16,10 +24,23 @@ namespace Kadder.Grpc.Client.AspNetCore
             Clients = new List<GrpcClient>();
         }
 
+        /// <summary>
+        /// GrpcClient list
+        /// </summary>
+        /// <value></value>
         public List<GrpcClient> Clients { get; set; }
 
+        /// <summary>
+        /// Grpc servicer list
+        /// </summary>
+        /// <value></value>
         internal List<Type> ServicerTypes { get; set; }
 
+        /// <summary>
+        /// Add new grpc client for servicers.
+        /// </summary>
+        /// <param name="options">grpc client options</param>
+        /// <returns></returns>
         public ClientBuilder AddClient(GrpcClientOptions options)
         {
             foreach (var assemblyName in options.AssemblyNames)
