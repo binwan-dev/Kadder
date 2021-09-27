@@ -13,7 +13,7 @@ namespace Kadder.Grpc.Client.Options
             PackageName = string.Empty;
             Addresses = new List<GrpcChannelOptions>();
             Assemblies = new List<Assembly>();
-            Interceptors = new List<Interceptor>();
+            Interceptors = new List<Type>();
             AssemblyNames = new List<string>();
             ConnectSecondTimeout = 10;
             KeepLive = true;
@@ -37,13 +37,19 @@ namespace Kadder.Grpc.Client.Options
 
         internal List<Assembly> Assemblies { get; set; }
 
-        public List<Interceptor> Interceptors { get; set; }
+        internal List<Type> Interceptors { get; set; }
 
         public List<string> AssemblyNames { get; set; }
 
         public GrpcClientOptions AddAssembly(params Assembly[] assemblies)
         {
             Assemblies.AddRange(assemblies);
+            return this;
+        }
+
+        public GrpcClientOptions AddInterceptor<T>() where T : Interceptor
+        {
+            Interceptors.Add(typeof(T));
             return this;
         }
     }

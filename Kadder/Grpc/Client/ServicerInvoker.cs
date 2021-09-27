@@ -12,10 +12,12 @@ namespace Kadder.Grpc.Client
     {
         private readonly IBinarySerializer _serializer;
         private readonly ConcurrentDictionary<string, IMethod> _methods;
+        private readonly IObjectProvider _provider;
 
-        public ServicerInvoker(IBinarySerializer serializer)
+        public ServicerInvoker(IBinarySerializer serializer, IObjectProvider provider)
         {
             _serializer = serializer;
+            _provider = provider;
             _methods = new ConcurrentDictionary<string, IMethod>();
         }
 
@@ -23,7 +25,7 @@ namespace Kadder.Grpc.Client
         {
             var client = getClient(service);
             var channelInfo = client.GetChannel();
-            var invoker = channelInfo.Channel.CreateCallInvoker();
+            var invoker = channelInfo.GetInvoker(_provider);
             var method = GetMethod<TRequest, TResponse>(service, methodName, MethodType.Unary);
 
             var result = invoker.AsyncUnaryCall(method, channelInfo.Options.Address, new CallOptions(), request);
@@ -34,7 +36,7 @@ namespace Kadder.Grpc.Client
         {
             var client = getClient(service);
             var channelInfo = client.GetChannel();
-            var invoker = channelInfo.Channel.CreateCallInvoker();
+            var invoker = channelInfo.GetInvoker(_provider);
             var method = GetMethod<TRequest, TResponse>(service, methodName, MethodType.ClientStreaming);
 
             var result = invoker.AsyncClientStreamingCall(method, channelInfo.Options.Address, new CallOptions());
@@ -47,7 +49,7 @@ namespace Kadder.Grpc.Client
         {
             var client = getClient(service);
             var channelInfo = client.GetChannel();
-            var invoker = channelInfo.Channel.CreateCallInvoker();
+            var invoker = channelInfo.GetInvoker(_provider);
             var method = GetMethod<TRequest, TResponse>(service, methodName, MethodType.ClientStreaming);
 
             var result = invoker.AsyncServerStreamingCall(method, channelInfo.Options.Address, new CallOptions(), request);
@@ -60,7 +62,7 @@ namespace Kadder.Grpc.Client
         {
             var client = getClient(service);
             var channelInfo = client.GetChannel();
-            var invoker = channelInfo.Channel.CreateCallInvoker();
+            var invoker = channelInfo.GetInvoker(_provider);
             var method = GetMethod<TRequest, TResponse>(service, methodName, MethodType.ClientStreaming);
 
             var result = invoker.AsyncDuplexStreamingCall(method, channelInfo.Options.Address, new CallOptions());

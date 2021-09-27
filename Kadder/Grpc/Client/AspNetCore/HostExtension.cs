@@ -59,6 +59,10 @@ namespace Microsoft.Extensions.Hosting
                     services.AddSingleton(servicerType, proxyerType);
                 }
 
+                foreach (var clientOptions in builder.ClientOptions)
+                    foreach (var interceptor in clientOptions.Interceptors)
+                        services.AddSingleton(interceptor);
+
                 services.AddSingleton(builder);
                 services.AddSingleton<IBinarySerializer, ProtobufBinarySerializer>();
                 services.AddSingleton(typeof(KadderBuilder), builder);

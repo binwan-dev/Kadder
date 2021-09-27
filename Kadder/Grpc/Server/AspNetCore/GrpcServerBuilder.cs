@@ -18,8 +18,14 @@ namespace Kadder.Grpc.Server.AspNetCore
 
         internal IList<Type> GrpcServicerProxyers { get; set; }
 
-        public List<Type> Interceptors { get; set; }
+        internal List<Type> Interceptors { get; set; }
 
         public List<string> AssemblyNames { get; set; }
+
+        public GrpcServerBuilder AddInterceptor<T>()
+        {
+            Interceptors.Add(typeof(T));
+            return this;
+        }
     }
 }
