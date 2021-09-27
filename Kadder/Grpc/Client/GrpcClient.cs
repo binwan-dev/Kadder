@@ -36,7 +36,7 @@ namespace Kadder.Grpc.Client
                 var servicerName = servicerType.FullName;
                 if (!string.IsNullOrWhiteSpace(options.PackageName))
                     servicerName = $"{options.PackageName}.{servicerType.Name}";
-                ClientDict.Add(servicerType.FullName, this);
+                ClientDict.Add(servicerName, this);
             }
         }
 

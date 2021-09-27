@@ -32,8 +32,6 @@ namespace Atlantis.Grpc.Simple.Client
             var provider = host.Services;
             var animalMessageServicer = provider.GetService<IAnimalMessageServicer>();
 
-            return;
-
             // 1 unary & no parameter
             await animalMessageServicer.HelloVoidAsync();
 

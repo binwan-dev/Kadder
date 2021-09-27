@@ -14,27 +14,23 @@ namespace Kadder.Simple.Server
             Console.WriteLine(Environment.CurrentDirectory);
 
             var host = new Microsoft.Extensions.Hosting.HostBuilder()
-                .ConfigureServices((context, services) =>
+                .UseGrpcServer((context, services, builder) =>
                 {
-                    // services.AddLogging();
-                    // services.UseGrpcServer(builder =>
-                    // {
-                    //     builder.Assemblies.Add(Assembly.GetExecutingAssembly());
-                    //     builder.Options = new GrpcServerOptions();
-                    //     builder.Options.PackageName = "Atlantis.Simple";
-                    //     builder.Options.Ports.Add(new ServerPort("0.0.0.0", 3001, ServerCredentials.Insecure));
-                    // });
-                    // services.AddScoped<IPersonMessageServicer, PersonMessageServicer>();
-                    // services.AddScoped<IAnimalMessageServicer, AnimalMessageServicer>();
-                    // services.AddScoped<INumberMessageServicer, NumberMessageServicer>();
-                    // services.AddScoped<ImplServicer>();
-                    // services.AddScoped<AttributeServicer>();
-                    // services.AddScoped<EndwidthKServicer>();
+                    builder.Assemblies.Add(Assembly.GetExecutingAssembly());
+                    builder.Options = new GrpcServerOptions();
+                    builder.Options.PackageName = "Atlantis.Simple";
+                    builder.Options.Ports.Add(new GrpcServerPort() { Port = 3001 });
 
-                    // Console.WriteLine("Server is running...");
+                    services.AddScoped<IPersonMessageServicer, PersonMessageServicer>();
+                    services.AddScoped<IAnimalMessageServicer, AnimalMessageServicer>();
+                    services.AddScoped<INumberMessageServicer, NumberMessageServicer>();
+                    services.AddScoped<ImplServicer>();
+                    services.AddScoped<AttributeServicer>();
+                    services.AddScoped<EndwidthKServicer>();
                 }).Build();
 
-            // host.Services.StartGrpcServer();
+            host.StartGrpcServer();
+            Console.WriteLine("Server is running...");
             await host.RunAsync();
         }
     }
