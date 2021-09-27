@@ -32,7 +32,12 @@ namespace Kadder.Grpc.Client
                 AddChannel(opt);
 
             foreach (var servicerType in servicerTypes)
+            {
+                var servicerName = servicerType.FullName;
+                if (!string.IsNullOrWhiteSpace(options.PackageName))
+                    servicerName = $"{options.PackageName}.{servicerType.Name}";
                 ClientDict.Add(servicerType.FullName, this);
+            }
         }
 
         public static IDictionary<string, GrpcClient> ClientDict => _clientDict;
