@@ -25,6 +25,7 @@ namespace Atlantis.Grpc.Simple.Client
                 .UseEnvironment("Development")
                 .UseGrpcClient((context, servicers, builder) =>
                 {
+                    builder.ClientOptions[0].AddInterceptor<Kadder.Simple.Client.LoggerInterceptor>();
                     Console.WriteLine(builder.ClientOptions.Count);
                 })
                 .Build();

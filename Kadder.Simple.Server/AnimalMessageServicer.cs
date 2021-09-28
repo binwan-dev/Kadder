@@ -48,11 +48,13 @@ namespace Kadder.Simple.Server
         public Task<HelloMessageResult> HelloAsync(HelloMessage message)
         {
             var result = new HelloMessageResult() { Result = $"Server Result: {message.Name}" };
+            Console.WriteLine(message.Name);
             return Task.FromResult(result);
         }
 
         public Task HelloVoidAsync()
         {
+            System.Threading.Thread.Sleep(5000);
             Console.WriteLine("Server void!");
             return HelloAsync(new HelloMessage());
         }

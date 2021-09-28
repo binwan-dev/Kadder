@@ -89,7 +89,7 @@ namespace Kadder.Grpc.Client
                 {
                     _invoker = Channel.CreateCallInvoker();
                     foreach (var interceptor in ClientOptions.Interceptors)
-                        _invoker.Intercept((Interceptor)provider.GetObject(interceptor));
+                        _invoker = _invoker.Intercept((Interceptor)provider.GetObject(interceptor));
                 }
                 return _invoker;
             }

@@ -47,9 +47,9 @@ namespace Kadder.Grpc.Client.Options
             return this;
         }
 
-        public GrpcClientOptions AddInterceptor<T>() where T : Interceptor
+        public GrpcClientOptions AddInterceptor<Interceptor>()
         {
-            Interceptors.Add(typeof(T));
+            Interceptors.Add(typeof(Interceptor));
             return this;
         }
     }

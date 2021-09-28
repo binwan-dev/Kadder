@@ -1,6 +1,7 @@
 using System.Reflection;
 using System;
 using System.Collections.Generic;
+using Grpc.Core.Interceptors;
 
 namespace Kadder.Grpc.Server.AspNetCore
 {
@@ -22,9 +23,9 @@ namespace Kadder.Grpc.Server.AspNetCore
 
         public List<string> AssemblyNames { get; set; }
 
-        public GrpcServerBuilder AddInterceptor<T>()
+        public GrpcServerBuilder AddInterceptor<Interceptor>()
         {
-            Interceptors.Add(typeof(T));
+            Interceptors.Add(typeof(Interceptor));
             return this;
         }
     }
