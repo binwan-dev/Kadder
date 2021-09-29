@@ -9,6 +9,7 @@ using Kadder.Grpc.Client.Options;
 using Grpc.Core;
 using System.Threading;
 using Microsoft.Extensions.Hosting;
+using Newtonsoft.Json;
 
 namespace Atlantis.Grpc.Simple.Client
 {
@@ -33,6 +34,12 @@ namespace Atlantis.Grpc.Simple.Client
             var provider = host.Services;
             var animalMessageServicer = provider.GetService<IAnimalMessageServicer>();
 
+            // await TestNormal(animalMessageServicer);
+            TestConcurrent(animalMessageServicer);
+        }
+
+        static async Task TestNormal(IAnimalMessageServicer animalMessageServicer)
+        {
             // 1 unary & no parameter
             await animalMessageServicer.HelloVoidAsync();
 
@@ -45,7 +52,11 @@ namespace Atlantis.Grpc.Simple.Client
             var requestStream = new AsyncRequestStream<HelloMessage>();
             var clientResult = animalMessageServicer.ClientAsync(requestStream);
             for (var i = 0; i < 10; i++)
+            {
+                Console.WriteLine($"Send client stream no {i}");
                 await requestStream.WriteAsync(new HelloMessage() { Name = $"Kadder.ClientStream.{i}" });
+            }
+            await requestStream.CompleteAsync();
             result = await clientResult;
             Console.WriteLine(result.Result);
 
@@ -69,15 +80,34 @@ namespace Atlantis.Grpc.Simple.Client
                 await responseStream.MoveNextAsync(cancelToken);
                 Console.WriteLine(result.Result);
             }
-
         }
 
-        public static IAsyncRequestStream<TRequest> change<TRequest>(IAsyncRequestStream<TRequest> request) where TRequest : class
+        static void TestConcurrent(IAnimalMessageServicer animalMessageServicer)
         {
-            var grpc = new AsyncRequestStream<TRequest>();
-            grpc.Name = "bbbb";
-            request = grpc;
-            return request;
+            var task1Req = new HelloMessage() { Name = "Task1" };
+            var task2Req = new HelloMessage() { Name = "Task2" };
+
+            var task1 = animalMessageServicer.HelloAsync(task1Req);
+            var task2 = animalMessageServicer.HelloAsync(task2Req);
+            var task1Stream = SendClientStream(animalMessageServicer);
+
+            var tasks = new Task<HelloMessageResult>[] { task1, task2, task1Stream };
+            var result = Task.WaitAny(tasks);
+            // var result = await SendClientStream(animalMessageServicer);
+            Console.WriteLine(JsonConvert.SerializeObject(tasks[result].Result));
+        }
+
+        static async Task<HelloMessageResult> SendClientStream(IAnimalMessageServicer animalMessageServicer)
+        {
+            var requestStream = new AsyncRequestStream<HelloMessage>();
+            var result = animalMessageServicer.ClientAsync(requestStream);
+            for (var i = 0; i < 10; i++)
+            {
+                Console.WriteLine($"Send client stream no {i}");
+                await requestStream.WriteAsync(new HelloMessage() { Name = $"Kadder.ClientStream.{i}" });
+            }
+            await requestStream.CompleteAsync();
+            return await result;
         }
 
         // static void TestAI(ServiceProvider provider)

@@ -9,8 +9,6 @@ namespace Kadder.Grpc.Client
         {
         }
 
-        internal IAsyncStreamWriter<TRequest> StreamWriter{get;set;}
-
-        public string Name{get;set;}
+        internal IClientStreamWriter<TRequest> StreamWriter { get; set; }
     }
 }

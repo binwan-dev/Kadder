@@ -6,8 +6,7 @@ namespace Kadder.Grpc.Client
     {
         public static IAsyncRequestStream<TRequest> CreateRequest<TRequest>() where TRequest : class
         {
-            var stream= new AsyncRequestStream<TRequest>();
-            stream.Name="ss";
+            var stream = new AsyncRequestStream<TRequest>();
             return stream;
         }
 

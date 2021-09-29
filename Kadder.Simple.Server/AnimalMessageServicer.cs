@@ -4,6 +4,7 @@ using Kadder.Utilies;
 using Kadder.Grpc.Server;
 using System.Threading;
 using System;
+using Grpc.Core;
 
 namespace Kadder.Simple.Server
 {
@@ -24,11 +25,16 @@ namespace Kadder.Simple.Server
     {
         public async Task<HelloMessageResult> ClientAsync(IAsyncRequestStream<HelloMessage> request)
         {
+            var i = 0;
             var token = new CancellationToken();
             while (await request.MoveNextAsync(token))
             {
+                // System.Threading.Thread.Sleep(2000);
                 var req = request.GetCurrent();
                 Console.WriteLine($"Requet: {req.Name} Type: {req.Type}");
+                i++;
+                // if (i == 4)
+                //     throw new RpcException(new Status(StatusCode.Internal, "client stream error"));
             }
 
             return new HelloMessageResult() { Result = "Client stream result!" };
@@ -47,6 +53,7 @@ namespace Kadder.Simple.Server
 
         public Task<HelloMessageResult> HelloAsync(HelloMessage message)
         {
+            System.Threading.Thread.Sleep(5000);
             var result = new HelloMessageResult() { Result = $"Server Result: {message.Name}" };
             Console.WriteLine(message.Name);
             return Task.FromResult(result);
@@ -54,7 +61,8 @@ namespace Kadder.Simple.Server
 
         public Task HelloVoidAsync()
         {
-            System.Threading.Thread.Sleep(5000);
+            // throw new RpcException(new Status(StatusCode.Internal, "sdfsfsdf"));
+            // System.Threading.Thread.Sleep(5000);
             Console.WriteLine("Server void!");
             return HelloAsync(new HelloMessage());
         }

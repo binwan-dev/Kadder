@@ -198,7 +198,7 @@ namespace Kadder.Grpc.Server
 
             var method = generateMethodHead(ref classDescripter, methodInfo);
             method.Parameters.Add(new ParameterDescripter(parameterType.Name, "request"));
-            method.Parameters.Add(new ParameterDescripter($"IAsyncStreamWriter<{responseType.Name}>", "response"));
+            method.Parameters.Add(new ParameterDescripter($"IServerStreamWriter<{responseType.Name}>", "response"));
             method.Parameters.Add(new ParameterDescripter("ServerCallContext", "context"));
 
             method.AppendCode($@"using(var scope = {ClassProviderName}.CreateScope())
@@ -208,7 +208,7 @@ namespace Kadder.Grpc.Server
             }}");
             method.SetReturnType("Task");
 
-            classDescripter.AddUsing(typeof(IAsyncStreamWriter<>).Namespace);
+            classDescripter.AddUsing(typeof(IServerStreamWriter<>).Namespace);
             classDescripter.AddUsing(typeof(AsyncRequestStream<>).Namespace);
             return method;
         }
@@ -221,7 +221,7 @@ namespace Kadder.Grpc.Server
 
             var method = generateMethodHead(ref classDescripter, methodInfo);
             method.Parameters.Add(new ParameterDescripter($"IAsyncStreamReader<{requestParameterType.Name}>", "request"));
-            method.Parameters.Add(new ParameterDescripter($"IAsyncStreamWriter<{responseType.Name}>", "response"));
+            method.Parameters.Add(new ParameterDescripter($"IServerStreamWriter<{responseType.Name}>", "response"));
             method.Parameters.Add(new ParameterDescripter("ServerCallContext", "context"));
 
             method.AppendCode($@"using(var scope = {ClassProviderName}.CreateScope())
@@ -232,7 +232,7 @@ namespace Kadder.Grpc.Server
             }}");
             method.SetReturnType("Task");
 
-            classDescripter.AddUsing(typeof(IAsyncStreamWriter<>).Namespace);
+            classDescripter.AddUsing(typeof(IServerStreamWriter<>).Namespace);
             classDescripter.AddUsing(typeof(AsyncRequestStream<>).Namespace);
             return method;
         }
@@ -278,7 +278,7 @@ namespace Kadder.Grpc.Server
         {
             var callInfo = getCallInfo(callType, method);
             callInfo.RequestType = callInfo.RequestType.Replace("IAsyncStreamReader<", "").Replace("Task<", "").Replace(">", "");
-            callInfo.ResponseType = callInfo.ResponseType.Replace("IAsyncStreamWriter<", "").Replace("Task<", "").Replace(">", "");
+            callInfo.ResponseType = callInfo.ResponseType.Replace("IServerStreamWriter<", "").Replace("Task<", "").Replace(">", "");
 
             var code = new StringBuilder();
             code.Append($@"                .AddMethod(new Method<{callInfo.RequestType}, {callInfo.ResponseType}>(

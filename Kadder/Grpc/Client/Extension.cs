@@ -1,6 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Grpc.Core;
 using Kadder.Grpc.Client;
 using Kadder.Streaming;
 using Kadder.Utilies;
@@ -16,6 +17,14 @@ namespace Kadder.Grpc.Client
                 throw new InvalidCastException("The stream is not grpc stream!");
 
             return grpcRequestStream.StreamWriter.WriteAsync(message);
+        }
+
+        public static Task CompleteAsync<T>(this IAsyncRequestStream<T> requestStream) where T : class
+        {
+            if (!(requestStream is AsyncRequestStream<T> grpcRequestStream))
+                throw new InvalidCastException("The stream is not grpc stream!");
+
+            return grpcRequestStream.StreamWriter.CompleteAsync();
         }
 
         public static T GetCurrent<T>(this IAsyncResponseStream<T> responseStream) where T : class

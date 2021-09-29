@@ -6,13 +6,13 @@ namespace Kadder.Grpc.Server
 {
     public class AsyncResponseStream<T> : IAsyncResponseStream<T> where T : class
     {
-        private readonly IAsyncStreamWriter<T> _writer;
+        private readonly IServerStreamWriter<T> _writer;
 
-        public AsyncResponseStream(IAsyncStreamWriter<T> writer)
+        public AsyncResponseStream(IServerStreamWriter<T> writer)
         {
             _writer = writer;
         }
 
-        public IAsyncStreamWriter<T> GrpcWriter => _writer;
+        public IServerStreamWriter<T> GrpcWriter => _writer;
     }
 }
