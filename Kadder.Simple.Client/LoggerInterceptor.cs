@@ -30,11 +30,6 @@ namespace Kadder.Simple.Client
         //     }
         // }
 
-        public override AsyncServerStreamingCall<TResponse> AsyncServerStreamingCall<TRequest, TResponse>(TRequest request, ClientInterceptorContext<TRequest, TResponse> context, AsyncServerStreamingCallContinuation<TRequest, TResponse> continuation)
-        {
-            return base.AsyncServerStreamingCall(request, context, continuation);
-        }
-
         // public override AsyncClientStreamingCall<TRequest, TResponse> AsyncClientStreamingCall<TRequest, TResponse>(ClientInterceptorContext<TRequest, TResponse> context, AsyncClientStreamingCallContinuation<TRequest, TResponse> continuation)
         // {
         //     var responseCon = continuation(context);

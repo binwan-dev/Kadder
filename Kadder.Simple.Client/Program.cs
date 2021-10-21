@@ -34,8 +34,8 @@ namespace Atlantis.Grpc.Simple.Client
             var provider = host.Services;
             var animalMessageServicer = provider.GetService<IAnimalMessageServicer>();
 
-            // await TestNormal(animalMessageServicer);
-            TestConcurrent(animalMessageServicer);
+            await TestNormal(animalMessageServicer);
+            // TestConcurrent(animalMessageServicer);
         }
 
         static async Task TestNormal(IAnimalMessageServicer animalMessageServicer)
@@ -61,6 +61,7 @@ namespace Atlantis.Grpc.Simple.Client
             Console.WriteLine(result.Result);
 
             // 4 server stream
+            Console.WriteLine("\nServer stream begin: ");
             var responseStream = new AsyncResponseStream<HelloMessageResult>();
             await animalMessageServicer.ServerAsync(request, responseStream);
             var cancelToken = new CancellationToken();
@@ -69,6 +70,7 @@ namespace Atlantis.Grpc.Simple.Client
                 result = responseStream.GetCurrent();
                 Console.WriteLine(result.Result);
             }
+            Console.WriteLine("\nServer stream  ");
 
             // 5 duplex stream
             requestStream = new AsyncRequestStream<HelloMessage>();

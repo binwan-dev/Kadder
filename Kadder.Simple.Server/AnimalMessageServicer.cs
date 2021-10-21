@@ -72,6 +72,8 @@ namespace Kadder.Simple.Server
             Console.WriteLine($"Requet: {request.Name} Type: {request.Type}");
             for (var i = 0; i < 10; i++)
             {
+                if (i == 5)
+                    throw new Exception("test");
                 await response.WriteAsync(new HelloMessageResult() { Result = "Server result Type: {req.Type} Name: {request.Name}-{i}" });
             }
         }
