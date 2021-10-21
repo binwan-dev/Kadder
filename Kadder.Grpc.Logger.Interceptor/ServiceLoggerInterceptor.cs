@@ -15,13 +15,6 @@ namespace Kadder.Grpc.Logger.Interceptor
         {
             _logger = logger;
         }
-
-        public override AsyncUnaryCall<TResponse> AsyncUnaryCall<TRequest, TResponse>(TRequest request, global::Grpc.Core.Interceptors.ClientInterceptorContext<TRequest, TResponse> context, AsyncUnaryCallContinuation<TRequest, TResponse> continuation)
-        {
-            Console.WriteLine("sss");
-            return base.AsyncUnaryCall(request, context, continuation);
-        }
-
         public override async Task<TResponse> UnaryServerHandler<TRequest, TResponse>(TRequest request, ServerCallContext context, UnaryServerMethod<TRequest, TResponse> continuation)
         {
             try
