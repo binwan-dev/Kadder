@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Kadder\Kadder.csproj" />
+    <ProjectReference Include="..\Kadder.Grpc.Logger.Interceptor\Kadder.Grpc.Logger.Interceptor.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -15,6 +16,7 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="5.0.0" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="5.0.0" />
   </ItemGroup>
 

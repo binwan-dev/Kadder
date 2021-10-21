@@ -4,6 +4,8 @@ using System.Threading.Tasks;
 using Grpc.Core;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Console;
 
 namespace Kadder.Simple.Server
 {
@@ -14,12 +16,17 @@ namespace Kadder.Simple.Server
             Console.WriteLine(Environment.CurrentDirectory);
 
             var host = new Microsoft.Extensions.Hosting.HostBuilder()
+                .ConfigureLogging(logging =>
+                {
+                    logging.AddConsole().SetMinimumLevel(LogLevel.Debug);
+                })
                 .UseGrpcServer((context, services, builder) =>
                 {
                     builder.Assemblies.Add(Assembly.GetExecutingAssembly());
                     builder.Options = new GrpcServerOptions();
                     builder.Options.PackageName = "Atlantis.Simple";
                     builder.Options.Ports.Add(new GrpcServerPort() { Port = 3001 });
+                    builder.AddLoggerInterceptor();
 
                     services.AddScoped<IPersonMessageServicer, PersonMessageServicer>();
                     services.AddScoped<IAnimalMessageServicer, AnimalMessageServicer>();

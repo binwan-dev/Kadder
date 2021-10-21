@@ -78,7 +78,7 @@ namespace Microsoft.Extensions.Hosting
             foreach (var serviceProxyer in builder.GrpcServicerProxyers)
             {
                 var definition = ((IGrpcServices)provider.GetService(serviceProxyer)).BindServices();
-                definition.Intercept(intercetors);
+                definition = definition.Intercept(intercetors);
                 server.Services.Add(definition);
             }
 
