@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
@@ -24,14 +25,35 @@ namespace Kadder.Grpc.Server
 
         public void Generate()
         {
-            var servicerProtos = new List<string>();
+            var servicerProtos = new Dictionary<string,string>();
             foreach (var servicerType in _servicerTypes)
             {
                 var servicerProto=generate(servicerType);
-                servicerProtos.Add(servicerProto);
+                servicerProtos.Add($"{servicerType.Name}.proto",servicerProto);
             }
+            servicerProtos.Add("main.proto", generateMainProto(servicerProtos.Keys.ToList()));
 
-            //todo: save proto to file.
+            saveProtoFile(servicerProtos);
+        }
+
+        private void saveProtoFile(Dictionary<string,string> protos)
+        {
+            if(!Directory.Exists(_saveDir))
+                Directory.CreateDirectory(_saveDir);
+
+            foreach(var proto in protos)
+                File.WriteAllText(Path.Combine(_saveDir, proto.Key), proto.Value);
+        }
+
+        private string generateMainProto(List<string> servicerProtoFiles)
+        {
+            var proto=new StringBuilder();
+            proto.AppendLine("syntax = \"proto3\";");
+            proto.AppendLine();
+            foreach(var servicerProtoFile in servicerProtoFiles)
+                proto.AppendLine($"import {servicerProtoFile}");
+
+            return proto.ToString();
         }
 
         private string generate(Type servicerType)
