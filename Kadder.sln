@@ -9,8 +9,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kadder.Simple.Client", "Kad
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kadder.Simple.Server", "Kadder.Simple.Server\Kadder.Simple.Server.csproj", "{1AA1A797-B9F2-4365-807D-1D75285FC025}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kadder.Grpc.Logger.Interceptor", "Kadder.Grpc.Logger.Interceptor\Kadder.Grpc.Logger.Interceptor.csproj", "{3DB6C144-CA64-423C-88B7-6BAF21140349}"
-EndProject
 Global
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -60,17 +58,5 @@ Global
 		{1AA1A797-B9F2-4365-807D-1D75285FC025}.Release|x64.Build.0 = Release|Any CPU
 		{1AA1A797-B9F2-4365-807D-1D75285FC025}.Release|x86.ActiveCfg = Release|Any CPU
 		{1AA1A797-B9F2-4365-807D-1D75285FC025}.Release|x86.Build.0 = Release|Any CPU
-		{3DB6C144-CA64-423C-88B7-6BAF21140349}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{3DB6C144-CA64-423C-88B7-6BAF21140349}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{3DB6C144-CA64-423C-88B7-6BAF21140349}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{3DB6C144-CA64-423C-88B7-6BAF21140349}.Debug|x64.Build.0 = Debug|Any CPU
-		{3DB6C144-CA64-423C-88B7-6BAF21140349}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{3DB6C144-CA64-423C-88B7-6BAF21140349}.Debug|x86.Build.0 = Debug|Any CPU
-		{3DB6C144-CA64-423C-88B7-6BAF21140349}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{3DB6C144-CA64-423C-88B7-6BAF21140349}.Release|Any CPU.Build.0 = Release|Any CPU
-		{3DB6C144-CA64-423C-88B7-6BAF21140349}.Release|x64.ActiveCfg = Release|Any CPU
-		{3DB6C144-CA64-423C-88B7-6BAF21140349}.Release|x64.Build.0 = Release|Any CPU
-		{3DB6C144-CA64-423C-88B7-6BAF21140349}.Release|x86.ActiveCfg = Release|Any CPU
-		{3DB6C144-CA64-423C-88B7-6BAF21140349}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
