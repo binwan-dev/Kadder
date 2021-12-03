@@ -7,12 +7,10 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Kadder\Kadder.csproj" />
-    <ProjectReference Include="..\Kadder.Simple.Server\Kadder.Simple.Server.csproj" />	
+    <ProjectReference Include="..\Kadder.Simple.Protocol\Kadder.Simple.Protocol.csproj" />	
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Google.Protobuf" Version="3.14.0" />
-    <PackageReference Include="Grpc.Core" Version="2.33.1" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="5.0.0" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="5.0.0" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="5.0.0" />

@@ -8,7 +8,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Kadder\Kadder.csproj" />
-    <ProjectReference Include="..\Kadder.Grpc.Logger.Interceptor\Kadder.Grpc.Logger.Interceptor.csproj" />
+    <ProjectReference Include="..\Kadder.Simple.Protocol\Kadder.Simple.Protocol.csproj" />
   </ItemGroup>
 
   <ItemGroup>

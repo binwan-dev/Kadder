@@ -2,6 +2,8 @@ using System;
 using System.Reflection;
 using System.Threading.Tasks;
 using Grpc.Core;
+using Kadder.Simple.Protocol.Servicers;
+using Kadder.Simple.Server.Servicers;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -13,27 +15,15 @@ namespace Kadder.Simple.Server
     {
         static async Task Main(string[] args)
         {
-            Console.WriteLine(Environment.CurrentDirectory);
-
             var host = new Microsoft.Extensions.Hosting.HostBuilder()
-                .ConfigureLogging(logging =>
-                {
-                    logging.AddConsole().SetMinimumLevel(LogLevel.Debug);
-                })
                 .UseGrpcServer((context, services, builder) =>
                 {
-                    builder.Assemblies.Add(Assembly.GetExecutingAssembly());
+                    builder.Assemblies.Add(typeof(IPersonServicer).Assembly);
                     builder.Options = new GrpcServerOptions();
-                    builder.Options.PackageName = "Atlantis.Simple";
-                    builder.Options.Ports.Add(new GrpcServerPort() { Port = 3001 });
-                    builder.AddLoggerInterceptor();
+                    builder.Options.PackageName = "Kadder.Servicer";
+                    builder.Options.Ports.Add(new GrpcServerPort() { Port = 3002 });
 
-                    services.AddScoped<IPersonMessageServicer, PersonMessageServicer>();
-                    services.AddScoped<IAnimalMessageServicer, AnimalMessageServicer>();
-                    services.AddScoped<INumberMessageServicer, NumberMessageServicer>();
-                    services.AddScoped<ImplServicer>();
-                    services.AddScoped<AttributeServicer>();
-                    services.AddScoped<EndwidthKServicer>();
+                    services.AddScoped<IPersonServicer, PersonServicer>();
                 }).Build();
 
             host.StartGrpcServer();
