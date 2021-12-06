@@ -57,7 +57,7 @@ namespace Kadder.Grpc.Client.AspNetCore
             return this;
         }
 
-        internal ClientBuilder SetByConfiguration()
+        internal ClientBuilder FillClients()
         {
             foreach (var options in ClientOptions)
                 AddClient(options);

@@ -31,8 +31,8 @@ namespace Microsoft.Extensions.Hosting
             hostBuilder.ConfigureServices((context, services) =>
             {
                 var builder = context.Configuration.GetSection(configurationKeyName).Get<ClientBuilder>() ?? new ClientBuilder();
-                builder.SetByConfiguration();
                 builderAction?.Invoke(context, services, builder);
+                builder.FillClients();
 
                 var codeBuilder = new CodeBuilder("CodeGenerate");
                 foreach (var client in builder.Clients)
