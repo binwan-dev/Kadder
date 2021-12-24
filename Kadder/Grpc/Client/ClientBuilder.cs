@@ -61,7 +61,7 @@ namespace Kadder.Grpc.Client
                 proxyerOptions.Interceptors.AddRange(GlobalInterceptors);
 
                 var servicerType = ServicerHelper.GetServicerTypes(proxyerOptions.Assemblies);
-                proxyers.Add(new GrpcProxyer(servicerTypes, proxyerOptions));
+                proxyers.Add(new GrpcProxyer(servicerType, proxyerOptions));
                 Assemblies.AddRange(proxyerOptions.Assemblies);
                 servicerTypes.AddRange(servicerType);
             }
