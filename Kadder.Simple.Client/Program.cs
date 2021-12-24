@@ -17,12 +17,12 @@ namespace Atlantis.Grpc.Simple.Client
                 .UseEnvironment("Development")
                 .UseGrpcClient((context, servicers, builder) =>
                 {
-                    var clientOptions = new GrpcClientOptions();
-                    clientOptions.PackageName = "Kadder.Servicer";
-                    clientOptions.Addresses.Add(new GrpcChannelOptions() { Address = "127.0.0.1:3002", Credentials = ChannelCredentials.Insecure });
-                    clientOptions.AddAssembly(typeof(IPersonServicer).Assembly);
+                    var proxyerOptions = new GrpcProxyerOptions();
+                    proxyerOptions.PackageName = "Kadder.Servicer";
+                    proxyerOptions.Addresses.Add(new GrpcChannelOptions() { Address = "127.0.0.1:3002", Credentials = ChannelCredentials.Insecure });
+                    proxyerOptions.AddAssembly(typeof(IPersonServicer).Assembly);
 
-                    builder.AddClient(clientOptions);
+                    builder.AddProxyer(proxyerOptions);
                 })
                 .Build();
 

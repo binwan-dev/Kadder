@@ -41,7 +41,7 @@ namespace Kadder.Grpc.Client
         /// </summary>
         /// <param name="options">grpc client options</param>
         /// <returns></returns>
-        public ClientBuilder AddClient(GrpcProxyerOptions options)
+        public ClientBuilder AddProxyer(GrpcProxyerOptions options)
         {
             foreach (var assemblyName in options.AssemblyNames)
                 options.Assemblies.Add(Assembly.Load(assemblyName));

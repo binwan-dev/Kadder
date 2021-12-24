@@ -76,7 +76,7 @@ namespace Kadder.Grpc.Client
         private GrpcProxyer getProxyer(string service)
         {
             if (!GrpcProxyer.ProxyerDict.TryGetValue(service, out GrpcProxyer proxyer))
-                throw new KeyNotFoundException($"Cannot found client! Servicer({service})");
+                throw new KeyNotFoundException($"Cannot found proxyer! Servicer({service})");
             return proxyer;
         }
 
