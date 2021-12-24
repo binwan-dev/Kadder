@@ -23,8 +23,8 @@ namespace Kadder.Grpc.Client
 
         public async Task<TResponse> RpcAsync<TRequest, TResponse>(TRequest request, string service, string methodName) where TRequest : class where TResponse : class
         {
-            var client = getClient(service);
-            var channelInfo = client.GetChannel();
+            var proxyer = getProxyer(service);
+            var channelInfo = proxyer.GetChannel();
             var invoker = channelInfo.GetInvoker(_provider);
             var method = GetMethod<TRequest, TResponse>(service, methodName, MethodType.Unary);
 
@@ -34,7 +34,7 @@ namespace Kadder.Grpc.Client
 
         public Task<TResponse> ClientStreamAsync<TRequest, TResponse>(IAsyncRequestStream<TRequest> request, string service, string methodName) where TRequest : class where TResponse : class
         {
-            var client = getClient(service);
+            var client = getProxyer(service);
             var channelInfo = client.GetChannel();
             var invoker = channelInfo.GetInvoker(_provider);
             var method = GetMethod<TRequest, TResponse>(service, methodName, MethodType.ClientStreaming);
@@ -47,7 +47,7 @@ namespace Kadder.Grpc.Client
 
         public Task ServerStreamAsync<TRequest, TResponse>(TRequest request, IAsyncResponseStream<TResponse> response, string service, string methodName) where TRequest : class where TResponse : class
         {
-            var client = getClient(service);
+            var client = getProxyer(service);
             var channelInfo = client.GetChannel();
             var invoker = channelInfo.GetInvoker(_provider);
             var method = GetMethod<TRequest, TResponse>(service, methodName, MethodType.ClientStreaming);
@@ -60,7 +60,7 @@ namespace Kadder.Grpc.Client
 
         public Task DuplexStreamAsync<TRequest, TResponse>(IAsyncRequestStream<TRequest> request, IAsyncResponseStream<TResponse> response, string service, string methodName) where TRequest : class where TResponse : class
         {
-            var client = getClient(service);
+            var client = getProxyer(service);
             var channelInfo = client.GetChannel();
             var invoker = channelInfo.GetInvoker(_provider);
             var method = GetMethod<TRequest, TResponse>(service, methodName, MethodType.ClientStreaming);
@@ -73,11 +73,11 @@ namespace Kadder.Grpc.Client
             return result.ResponseHeadersAsync;
         }
 
-        private GrpcClient getClient(string service)
+        private GrpcProxyer getProxyer(string service)
         {
-            if (!GrpcClient.ClientDict.TryGetValue(service, out GrpcClient client))
+            if (!GrpcProxyer.ProxyerDict.TryGetValue(service, out GrpcProxyer proxyer))
                 throw new KeyNotFoundException($"Cannot found client! Servicer({service})");
-            return client;
+            return proxyer;
         }
 
         private Method<TRequest, TResponse> GetMethod<TRequest, TResponse>(string service, string methodName, MethodType methodType)

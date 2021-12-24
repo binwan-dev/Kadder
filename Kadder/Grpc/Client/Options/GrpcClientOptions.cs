@@ -5,9 +5,9 @@ using Grpc.Core.Interceptors;
 
 namespace Kadder.Grpc.Client.Options
 {
-    public class GrpcClientOptions
+    public class GrpcProxyerOptions
     {
-        public GrpcClientOptions()
+        public GrpcProxyerOptions()
         {
             Name = string.Empty;
             PackageName = string.Empty;
@@ -41,13 +41,13 @@ namespace Kadder.Grpc.Client.Options
 
         public List<string> AssemblyNames { get; set; }
 
-        public GrpcClientOptions AddAssembly(params Assembly[] assemblies)
+        public GrpcProxyerOptions AddAssembly(params Assembly[] assemblies)
         {
             Assemblies.AddRange(assemblies);
             return this;
         }
 
-        public GrpcClientOptions AddInterceptor<Interceptor>()
+        public GrpcProxyerOptions AddInterceptor<Interceptor>()
         {
             Interceptors.Add(typeof(Interceptor));
             return this;

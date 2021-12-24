@@ -9,23 +9,23 @@ using Kadder.Utils;
 
 namespace Kadder.Grpc.Client
 {
-    public class GrpcClient
+    public class GrpcProxyer
     {
-        private static IDictionary<string, GrpcClient> _clientDict;
+        private static IDictionary<string, GrpcProxyer> _proxyerDict;
 
-        static GrpcClient()
+        static GrpcProxyer()
         {
-            _clientDict = new Dictionary<string, GrpcClient>();
+            _proxyerDict = new Dictionary<string, GrpcProxyer>();
         }
 
         private readonly List<Type> _servicerTypes;
-        private readonly GrpcClientOptions _clientOptions;
+        private readonly GrpcProxyerOptions _proxyerOptions;
         private readonly IDictionary<string, ChannelInfo> _channels;
 
-        public GrpcClient(List<Type> servicerTypes, GrpcClientOptions options)
+        public GrpcProxyer(List<Type> servicerTypes, GrpcProxyerOptions options)
         {
             _servicerTypes = servicerTypes;
-            _clientOptions = options;
+            _proxyerOptions = options;
             _channels = new Dictionary<string, ChannelInfo>();
 
             foreach (var opt in options.Addresses)
@@ -36,15 +36,15 @@ namespace Kadder.Grpc.Client
                 var servicerName = servicerType.FullName;
                 if (!string.IsNullOrWhiteSpace(options.PackageName))
                     servicerName = $"{options.PackageName}.{servicerType.Name}";
-                ClientDict.Add(servicerName, this);
+                ProxyerDict.Add(servicerName, this);
             }
         }
 
-        public static IDictionary<string, GrpcClient> ClientDict => _clientDict;
+        public static IDictionary<string, GrpcProxyer> ProxyerDict => _proxyerDict;
 
         public IReadOnlyList<Type> ServicerTypes => _servicerTypes;
 
-        public GrpcClientOptions Options => _clientOptions;
+        public GrpcProxyerOptions Options => _proxyerOptions;
 
         public virtual ChannelInfo GetChannel()
             => _channels.FirstOrDefault().Value;
@@ -68,7 +68,7 @@ namespace Kadder.Grpc.Client
             {
                 Channel = new Channel(options.Address, options.Credentials),
                 Options = options,
-                ClientOptions = _clientOptions
+                ProxyerOptions = _proxyerOptions
             };
             return channel;
         }
@@ -79,7 +79,7 @@ namespace Kadder.Grpc.Client
 
             public Channel Channel { get; set; }
 
-            public GrpcClientOptions ClientOptions { get; set; }
+            public GrpcProxyerOptions ProxyerOptions { get; set; }
 
             public GrpcChannelOptions Options { get; set; }
 
@@ -88,7 +88,7 @@ namespace Kadder.Grpc.Client
                 if (_invoker == null)
                 {
                     _invoker = Channel.CreateCallInvoker();
-                    foreach (var interceptor in ClientOptions.Interceptors)
+                    foreach (var interceptor in ProxyerOptions.Interceptors)
                         _invoker = _invoker.Intercept((Interceptor)provider.GetObject(interceptor));
                 }
                 return _invoker;

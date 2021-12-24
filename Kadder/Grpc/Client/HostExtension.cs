@@ -30,14 +30,16 @@ namespace Microsoft.Extensions.Hosting
             hostBuilder.ConfigureServices((context, services) =>
             {
                 var builder = context.Configuration.GetSection(configurationKeyName).Get<ClientBuilder>() ?? new ClientBuilder();
+                builder.Configuration = context.Configuration;
+                builder.Services = services;
                 builderAction?.Invoke(context, services, builder);
-                builder.FillClients();
+                var client = builder.Build();
 
                 var codeBuilder = new CodeBuilder("CodeGenerate");
-                foreach (var client in builder.Clients)
+                foreach (var proxyer in client.Proxyers)
                 {
-                    codeBuilder.CreateClass(new ServicerProxyGenerator(client.Options.PackageName, client.ServicerTypes.ToList()).Generate().ToArray());
-                    codeBuilder.AddAssemblyRefence(client.Options.Assemblies.ToArray());
+                    codeBuilder.CreateClass(new ServicerProxyGenerator(proxyer.Options.PackageName, client.ServicerTypes.ToList()).Generate().ToArray());
+                    codeBuilder.AddAssemblyRefence(proxyer.Options.Assemblies.ToArray());
                 }
                 codeBuilder.AddAssemblyRefence(Assembly.GetExecutingAssembly())
                     .AddAssemblyRefence(typeof(ServerServiceDefinition).Assembly)
@@ -54,17 +56,16 @@ namespace Microsoft.Extensions.Hosting
                     var proxyerType = codeAssembly.Assembly.GetType(namespaces);
                     var servicerType = proxyerType.BaseType;
                     if (servicerType == typeof(object))
-                        servicerType = builder.ServicerTypes.FirstOrDefault(p => p.FullName == proxyerType.GetInterfaces()[0].FullName);
+                        servicerType = client.ServicerTypes.FirstOrDefault(p => p.FullName == proxyerType.GetInterfaces()[0].FullName);
                     services.AddSingleton(servicerType, proxyerType);
                 }
 
-                foreach (var clientOptions in builder.ClientOptions)
-                    foreach (var interceptor in clientOptions.Interceptors)
+                foreach (var proxyerOptions in client.ProxyerOptions)
+                    foreach (var interceptor in proxyerOptions.Interceptors)
                         services.AddSingleton(interceptor);
 
-                services.AddSingleton(builder);
+                services.AddSingleton(client);
                 services.AddSingleton<IBinarySerializer, ProtobufBinarySerializer>();
-                services.AddSingleton(typeof(KadderBuilder), builder);
                 services.AddSingleton<ServicerInvoker>();
                 services.AddSingleton<IObjectProvider, ObjectProvider>();
 

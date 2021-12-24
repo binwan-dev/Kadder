@@ -9,6 +9,9 @@ using System;
 using System.Collections.Generic;
 using Kadder.Grpc.Client.Options;
 using Kadder.Utils;
+using Grpc.Core.Interceptors;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Kadder.Grpc.Client
 {
@@ -21,46 +24,53 @@ namespace Kadder.Grpc.Client
 
         public ClientBuilder()
         {
-            Clients = new List<GrpcClient>();
-            ClientOptions = new List<GrpcClientOptions>();
-            ServicerTypes = new List<Type>();
+            ProxyerOptions = new List<GrpcProxyerOptions>();
+            GlobalInterceptors = new List<Type>();
         }
 
-        /// <summary>
-        /// GrpcClient list
-        /// </summary>
-        /// <value></value>
-        internal List<GrpcClient> Clients { get; set; }
+        public List<Type> GlobalInterceptors { get; internal set; }
 
-        /// <summary>
-        /// Grpc servicer list
-        /// </summary>
-        /// <value></value>
-        internal List<Type> ServicerTypes { get; set; }
+        public List<GrpcProxyerOptions> ProxyerOptions { get; set; }
 
-        public List<GrpcClientOptions> ClientOptions { get; set; }
+        public IConfiguration Configuration { get; internal set; }
+
+        public IServiceCollection Services { get; internal set; }
 
         /// <summary>
         /// Add new grpc client for servicers.
         /// </summary>
         /// <param name="options">grpc client options</param>
         /// <returns></returns>
-        public ClientBuilder AddClient(GrpcClientOptions options)
+        public ClientBuilder AddClient(GrpcProxyerOptions options)
         {
             foreach (var assemblyName in options.AssemblyNames)
                 options.Assemblies.Add(Assembly.Load(assemblyName));
 
-            var servicerTypes = ServicerHelper.GetServicerTypes(options.Assemblies);
-            Clients.Add(new GrpcClient(servicerTypes, options));
-            Assemblies.AddRange(options.Assemblies);
-            ServicerTypes.AddRange(servicerTypes);
+            ProxyerOptions.Add(options);
+
             return this;
         }
 
-        internal ClientBuilder FillClients()
+        internal Client Build()
         {
-            foreach (var options in ClientOptions)
-                AddClient(options);
+            var servicerTypes = new List<Type>();
+            var proxyers = new List<GrpcProxyer>();
+
+            foreach (var proxyerOptions in ProxyerOptions)
+            {
+                proxyerOptions.Interceptors.AddRange(GlobalInterceptors);
+
+                var servicerType = ServicerHelper.GetServicerTypes(proxyerOptions.Assemblies);
+                proxyers.Add(new GrpcProxyer(servicerTypes, proxyerOptions));
+                Assemblies.AddRange(proxyerOptions.Assemblies);
+                servicerTypes.AddRange(servicerType);
+            }
+            return new Client(servicerTypes, proxyers, ProxyerOptions);
+        }
+
+        public ClientBuilder AddGlobalInterceptor<TInterceptor>() where TInterceptor : Interceptor
+        {
+            GlobalInterceptors.Add(typeof(TInterceptor));
             return this;
         }
     }
