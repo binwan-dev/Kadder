@@ -9,6 +9,7 @@ using Kadder.Grpc.Server;
 using Kadder.Utils;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Extensions.Hosting
 {
@@ -36,6 +37,7 @@ namespace Microsoft.Extensions.Hosting
                 var codeBuilder = new CodeBuilder("Kadder.Grpc.Server");
                 codeBuilder.CreateClass(servicerProxyers.ToArray());
                 codeBuilder.AddAssemblyRefence(Assembly.GetExecutingAssembly())
+		    .AddAssemblyRefence(typeof(ILogger).Assembly)
                     .AddAssemblyRefence(typeof(ServerServiceDefinition).Assembly)
                     .AddAssemblyRefence(typeof(ServiceProviderServiceExtensions).Assembly)
                     .AddAssemblyRefence(typeof(Console).Assembly)
