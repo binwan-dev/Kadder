@@ -16,9 +16,15 @@
             "stopAtEntry": false
         },
         {
-            "name": ".NET Core Attach",
+            "name": "Kadder.Simple.Server",
             "type": "coreclr",
-            "request": "attach"
+            "request": "launch",
+            "preLaunchTask": "build",
+            "program": "${workspaceFolder}/Kadder.Simple.Server/bin/Debug/netcoreapp3.1/Kadder.Simple.Server.dll",
+            "args": [],
+            "cwd": "${workspaceFolder}/Kadder.Simple.Server",
+            "console": "internalConsole",
+            "stopAtEntry": false
         }
     ]
 }

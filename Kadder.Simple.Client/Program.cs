@@ -15,15 +15,7 @@ namespace Atlantis.Grpc.Simple.Client
         {
             var host = Microsoft.Extensions.Hosting.Host.CreateDefaultBuilder()
                 .UseEnvironment("Development")
-                .UseGrpcClient((context, servicers, builder) =>
-                {
-                    var proxyerOptions = new GrpcProxyerOptions();
-                    proxyerOptions.PackageName = "Kadder.Servicer";
-                    proxyerOptions.Addresses.Add(new GrpcChannelOptions() { Address = "127.0.0.1:3002", Credentials = ChannelCredentials.Insecure });
-                    proxyerOptions.AddAssembly(typeof(IPersonServicer).Assembly);
-
-                    builder.AddProxyer(proxyerOptions);
-                })
+                .UseGrpcClient()
                 .Build();
 
             var provider = host.Services;

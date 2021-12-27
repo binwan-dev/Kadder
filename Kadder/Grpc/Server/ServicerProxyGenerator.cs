@@ -7,6 +7,7 @@ using GenAssembly;
 using GenAssembly.Descripters;
 using Grpc.Core;
 using Kadder.Utils;
+using Microsoft.Extensions.Logging;
 
 namespace Kadder.Grpc.Server
 {
@@ -14,6 +15,7 @@ namespace Kadder.Grpc.Server
     {
         public const string ClassProviderName = "_provider";
         public const string ClassBinarySerializerName = "_binarySerializer";
+        public const string ClassLoggerName = "_log";	
         public const string FakeCallTypeAttributeName = "FakeCallType";
 
         private readonly List<Type> _servicerTypes;
@@ -87,9 +89,13 @@ namespace Kadder.Grpc.Server
                 .SetType(typeof(IObjectProvider));
             providerField.SetAccess(AccessType.PrivateReadonly);
 
-            classDescripter.CreateFiled(binarySerializerField, providerField)
+            var loggerField = new FieldDescripter(ClassLoggerName).SetType(typeof(ILogger));
+            loggerField.SetAccess(AccessType.PrivateReadonly);
+
+            classDescripter.CreateFiled(binarySerializerField, providerField, loggerField)
                 .AddUsing(typeof(IBinarySerializer).Namespace)
-                .AddUsing(typeof(IObjectProvider).Namespace);
+                .AddUsing(typeof(IObjectProvider).Namespace)
+				.AddUsing(typeof(ILogger).Namespace);
         }
 
         private void generateConstructor(ref ClassDescripter classDescripter)
@@ -102,7 +108,8 @@ namespace Kadder.Grpc.Server
 
             var code = $@"
             {ClassProviderName} = provider;
-            {ClassBinarySerializerName} = provider.GetObject<IBinarySerializer>();";
+            {ClassBinarySerializerName} = provider.GetObject<IBinarySerializer>();
+            {ClassLoggerName} = provider.GetObject<ILogger>();";
             constructor.SetCode(code);
 
             classDescripter.CreateConstructor(constructor);
@@ -148,37 +155,31 @@ namespace Kadder.Grpc.Server
             var resultCode = Helper.GenerateAwaitResultCode(returnType);
             var requestCode = Helper.GenerateRequestCode(parameterType);
             var servicerName = methodInfo.DeclaringType.FullName;
+            var methodName = methodInfo.Name;
+            var returnCode = Helper.GenerateReturnCode(returnType);
 
             var method = generateMethodHead(ref classDescripter, methodInfo);
             method.Parameters.Add(new ParameterDescripter(parameterType.Name, "request"));
             method.Parameters.Add(new ParameterDescripter("ServerCallContext", "context"));
-
-            method.AppendCode($@"using(var scope = {ClassProviderName}.CreateScope())
-            {{
-                {resultCode}await scope.Provider.GetObject<{servicerName}>().{methodInfo.Name}({requestCode});
-                {Helper.GenerateReturnCode(returnType)}
-            }}");
+            method.AppendCode(genCallCode(servicerName, methodName, resultCode, requestCode, returnCode));
             method.SetReturnType($"Task<{returnType.Name}>");
 
             return method;
         }
-
+		
         private MethodDescripter generateClientStreamRpcMethod(ref ClassDescripter classDescripter, MethodInfo methodInfo, Type parameterType, Type returnType)
         {
             var resultCode = Helper.GenerateAwaitResultCode(returnType);
             var servicerName = methodInfo.DeclaringType.FullName;
+            var methodName = methodInfo.Name;
             var requestParameterType = parameterType.GenericTypeArguments[0];
+            var returnCode = Helper.GenerateReturnCode(returnType);
 
             var method = generateMethodHead(ref classDescripter, methodInfo);
             method.Parameters.Add(new ParameterDescripter($"IAsyncStreamReader<{requestParameterType.Name}>", "request"));
             method.Parameters.Add(new ParameterDescripter("ServerCallContext", "context"));
-
-            method.AppendCode($@"using(var scope = {ClassProviderName}.CreateScope())
-            {{
-                var streamRequest = new AsyncRequestStream<{requestParameterType.Name}>(request); 
-                {resultCode}await scope.Provider.GetObject<{servicerName}>().{methodInfo.Name}(streamRequest);
-                {Helper.GenerateReturnCode(returnType)}
-            }}");
+            method.AppendCode($"var streamReq = new AsyncRequestStream<{requestParameterType.Name}>(request);");
+            method.AppendCode(genCallCode(servicerName, methodName, resultCode, "streamReq", returnCode));
             method.SetReturnType($"Task<{returnType.Name}>");
 
             classDescripter.AddUsing(typeof(IAsyncStreamReader<>).Namespace);
@@ -188,20 +189,17 @@ namespace Kadder.Grpc.Server
 
         private MethodDescripter generateServerStreamRpcMethod(ref ClassDescripter classDescripter, MethodInfo methodInfo, Type parameterType, Type returnType)
         {
-            var requestCode = Helper.GenerateRequestCode(parameterType);
+            var requestCode = $"{Helper.GenerateRequestCode(parameterType)}, responseStream";
             var servicerName = methodInfo.DeclaringType.FullName;
             var responseType = returnType.GenericTypeArguments[0];
+            var methodName = methodInfo.Name;
 
             var method = generateMethodHead(ref classDescripter, methodInfo);
             method.Parameters.Add(new ParameterDescripter(parameterType.Name, "request"));
             method.Parameters.Add(new ParameterDescripter($"IServerStreamWriter<{responseType.Name}>", "response"));
             method.Parameters.Add(new ParameterDescripter("ServerCallContext", "context"));
-
-            method.AppendCode($@"using(var scope = {ClassProviderName}.CreateScope())
-            {{
-                var responseStream = new AsyncResponseStream<{responseType.Name}>(response);
-                await scope.Provider.GetObject<{servicerName}>().{methodInfo.Name}({requestCode}, responseStream);
-            }}");
+            method.AppendCode($"var responseStream = new AsyncResponseStream<{responseType.Name}>(response);");
+            method.AppendCode(genCallCode(servicerName, methodName, string.Empty, requestCode, string.Empty));
             method.SetReturnType("Task");
 
             classDescripter.AddUsing(typeof(IServerStreamWriter<>).Namespace);
@@ -213,19 +211,17 @@ namespace Kadder.Grpc.Server
         {
             var requestParameterType = parameterType.GenericTypeArguments[0];
             var servicerName = methodInfo.DeclaringType.FullName;
+            var methodName = methodInfo.Name;
             var responseType = returnType.GenericTypeArguments[0];
+            var requestCode = "requestStream, responseStream";
 
             var method = generateMethodHead(ref classDescripter, methodInfo);
             method.Parameters.Add(new ParameterDescripter($"IAsyncStreamReader<{requestParameterType.Name}>", "request"));
             method.Parameters.Add(new ParameterDescripter($"IServerStreamWriter<{responseType.Name}>", "response"));
             method.Parameters.Add(new ParameterDescripter("ServerCallContext", "context"));
-
-            method.AppendCode($@"using(var scope = {ClassProviderName}.CreateScope())
-            {{
-                var requestStream = new AsyncRequestStream<{requestParameterType.Name}>(request);
-                var responseStream = new AsyncResponseStream<{responseType.Name}>(response);
-                await scope.Provider.GetObject<{servicerName}>().{methodInfo.Name}(requestStream, responseStream);
-            }}");
+            method.AppendCode($"var requestStream = new AsyncRequestStream<{requestParameterType.Name}>(request);");
+            method.AppendCode($"var responseStream = new AsyncResponseStream<{responseType.Name}>(response);");
+            method.AppendCode(genCallCode(servicerName, methodName, string.Empty, requestCode, string.Empty));
             method.SetReturnType("Task");
 
             classDescripter.AddUsing(typeof(IServerStreamWriter<>).Namespace);
@@ -241,6 +237,16 @@ namespace Kadder.Grpc.Server
             method.Access = AccessType.Public;
             return method;
         }
+
+		private string genCallCode(string servicer, string method, string result, string request, string @return)
+        {
+            return $@"using(var scope = {ClassProviderName}.CreateScope())
+            {{
+                {result}await scope.Provider.GetObject<{servicer}>().{method}({request});
+                {@return}
+            }}";
+        }
+
         #endregion
 
         #region GrpcCallMethod

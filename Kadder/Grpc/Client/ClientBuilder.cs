@@ -43,9 +43,6 @@ namespace Kadder.Grpc.Client
         /// <returns></returns>
         public ClientBuilder AddProxyer(GrpcProxyerOptions options)
         {
-            foreach (var assemblyName in options.AssemblyNames)
-                options.Assemblies.Add(Assembly.Load(assemblyName));
-
             ProxyerOptions.Add(options);
 
             return this;
@@ -58,6 +55,8 @@ namespace Kadder.Grpc.Client
 
             foreach (var proxyerOptions in ProxyerOptions)
             {
+                foreach (var assemblyName in proxyerOptions.AssemblyNames)
+                    proxyerOptions.AddAssembly(Assembly.Load(assemblyName));
                 proxyerOptions.Interceptors.AddRange(GlobalInterceptors);
 
                 var servicerType = ServicerHelper.GetServicerTypes(proxyerOptions.Assemblies);

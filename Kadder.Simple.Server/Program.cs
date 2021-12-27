@@ -15,16 +15,13 @@ namespace Kadder.Simple.Server
     {
         static async Task Main(string[] args)
         {
-            var host = new Microsoft.Extensions.Hosting.HostBuilder()
-                .UseGrpcServer((context, services, builder) =>
+            var host = Host.CreateDefaultBuilder()
+                .UseGrpcServer()
+                .ConfigureServices(services =>
                 {
-                    builder.Assemblies.Add(typeof(IPersonServicer).Assembly);
-                    builder.Options = new GrpcServerOptions();
-                    builder.Options.PackageName = "Kadder.Servicer";
-                    builder.Options.Ports.Add(new GrpcServerPort() { Port = 3002 });
-
-                    services.AddScoped<IPersonServicer, PersonServicer>();
-                }).Build();
+                    // services.AddScoped<IPersonServicer, PersonServicer>();
+                })
+                .Build();
 
             host.StartGrpcServer();
             Console.WriteLine("Server is running...");
