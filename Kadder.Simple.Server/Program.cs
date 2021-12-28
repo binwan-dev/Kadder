@@ -16,6 +16,12 @@ namespace Kadder.Simple.Server
         static async Task Main(string[] args)
         {
             var host = Host.CreateDefaultBuilder()
+		.ConfigureLogging((context,builder)=>
+		{
+		    builder.SetMinimumLevel(LogLevel.Debug);
+		    builder.AddConsole();
+		    builder.Services.AddLogging();
+		})
                 .UseGrpcServer()
                 .ConfigureServices(services =>
                 {

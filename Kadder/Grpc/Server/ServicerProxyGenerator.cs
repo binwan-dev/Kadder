@@ -109,7 +109,7 @@ namespace Kadder.Grpc.Server
             var code = $@"
             {ClassProviderName} = provider;
             {ClassBinarySerializerName} = provider.GetObject<IBinarySerializer>();
-            {ClassLoggerName} = provider.GetObject<ILogger>();";
+            {ClassLoggerName} = provider.GetObject<ILogger<{classDescripter.Name}>>();";
             constructor.SetCode(code);
 
             classDescripter.CreateConstructor(constructor);
@@ -240,10 +240,19 @@ namespace Kadder.Grpc.Server
 
 		private string genCallCode(string servicer, string method, string result, string request, string @return)
         {
-            return $@"using(var scope = {ClassProviderName}.CreateScope())
+            return $@"try
             {{
-                {result}await scope.Provider.GetObject<{servicer}>().{method}({request});
-                {@return}
+                using(var scope = {ClassProviderName}.CreateScope())
+                {{
+                    var servicer = scope.Provider.GetObject<{servicer}>() ?? throw new ArgumentNullException(""Not found servicer({servicer}) register!"");
+				    {result}await servicer.{method}({request});
+				    {@return}
+                }}
+            }}
+            catch(Exception ex)
+            {{
+                _log.LogError(ex,$""Handler has an unknow error! Msg: {{ex.Message}}, Servicer: {servicer}, Method: {method}"");
+                throw new RpcException(new Status(StatusCode.Internal,""Server has an unknow error!""));
             }}";
         }
 

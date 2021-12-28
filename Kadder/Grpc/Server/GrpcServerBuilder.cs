@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Text;
 
 namespace Kadder.Grpc.Server
 {
@@ -25,6 +26,36 @@ namespace Kadder.Grpc.Server
         {
             Interceptors.Add(typeof(Interceptor));
             return this;
+        }
+
+        public override string ToString()
+        {
+            var str = new StringBuilder();
+            str.AppendLine("############# Grpc Server Options #############");
+            str.AppendLine("Options");
+            str.AppendLine($"  PackageName: {Options.PackageName}");
+            str.AppendLine($"  IsGeneralProtoFile: {Options.IsGeneralProtoFile}");
+            str.AppendLine("  ChannelOptions");
+            foreach(var channel in Options.ChannelOptions)
+                str.AppendLine($"    Name: {channel.Name}, Value: {channel.StringValue}");
+            str.AppendLine("  ListenPorts");	    
+	    foreach(var port in Options.Ports)
+                str.AppendLine($"    Name: {port.Name}, Host: {port.Host}, Port: {port.Port}, Credentials: {port.Credentials.GetType().Name}");
+
+            str.AppendLine();
+            str.AppendLine("Assemblies:");
+	    foreach(var assembly in Assemblies)
+                str.AppendLine($"  {assembly.FullName}");
+
+            str.AppendLine();
+            str.AppendLine("Interceptors:");
+            foreach (var interceptor in Interceptors)
+                str.AppendLine($"  {interceptor.Name}");
+
+            str.AppendLine();
+            str.AppendLine("############# Grpc Server Options #############");	    
+
+            return str.ToString();
         }
     }
 }

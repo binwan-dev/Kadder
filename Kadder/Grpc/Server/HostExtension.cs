@@ -19,6 +19,8 @@ namespace Microsoft.Extensions.Hosting
         {
             hostBuilder.ConfigureServices((context, services) =>
             {
+                var log = services.BuildServiceProvider().GetService<ILogger<GrpcServerBuilder>>();
+
                 var builder = context.Configuration.GetSection(configurationKeyName).Get<GrpcServerBuilder>() ?? new GrpcServerBuilder();
                 builderAction?.Invoke(context, services, builder);
 
@@ -31,7 +33,13 @@ namespace Microsoft.Extensions.Hosting
                 foreach (var assemblyName in builder.AssemblyNames)
                     builder.Assemblies.Add(Assembly.Load(assemblyName));
 
+		if(log.IsEnabled(LogLevel.Debug))
+		    log.LogDebug(builder.ToString());
+
                 var servicerTypes = ServicerHelper.GetServicerTypes(builder.Assemblies);
+                if (servicerTypes == null || servicerTypes.Count == 0)
+                    throw new ArgumentNullException("Not found any grpc servicer!");
+
                 var servicerProxyers = new ServicerProxyGenerator(builder.Options.PackageName, servicerTypes).Generate();
 
                 var codeBuilder = new CodeBuilder("Kadder.Grpc.Server");
