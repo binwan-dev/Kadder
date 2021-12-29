@@ -38,7 +38,7 @@ namespace Microsoft.Extensions.Hosting
                 var codeBuilder = new CodeBuilder("CodeGenerate");
                 foreach (var proxyer in client.Proxyers)
                 {
-                    codeBuilder.CreateClass(new ServicerProxyGenerator(proxyer.Options.PackageName, client.ServicerTypes.ToList()).Generate().ToArray());
+                    codeBuilder.CreateClass(new ServicerProxyGenerator(proxyer.Options.PackageName, proxyer.ServicerTypes.ToList()).Generate().ToArray());
                     codeBuilder.AddAssemblyRefence(proxyer.Options.Assemblies.ToArray());
                 }
                 codeBuilder.AddAssemblyRefence(Assembly.GetExecutingAssembly())
@@ -54,10 +54,11 @@ namespace Microsoft.Extensions.Hosting
                 {
                     var namespaces = $"{servicerProxyer.Namespace}.{servicerProxyer.Name}";
                     var proxyerType = codeAssembly.Assembly.GetType(namespaces);
-                    var servicerType = proxyerType.BaseType;
-                    if (servicerType == typeof(object))
-                        servicerType = client.ServicerTypes.FirstOrDefault(p => p.FullName == proxyerType.GetInterfaces()[0].FullName);
-                    services.AddSingleton(servicerType, proxyerType);
+                    var servicerType = proxyerType.GetInterfaces().FirstOrDefault();
+                    if (servicerType == null)
+                        services.AddSingleton(proxyerType);
+                    else
+                        services.AddSingleton(servicerType, proxyerType);
                 }
 
                 foreach (var proxyerOptions in client.ProxyerOptions)

@@ -50,7 +50,6 @@ namespace Kadder.Grpc.Client
 
         internal Client Build()
         {
-            var servicerTypes = new List<Type>();
             var proxyers = new List<GrpcProxyer>();
 
             foreach (var proxyerOptions in ProxyerOptions)
@@ -62,9 +61,8 @@ namespace Kadder.Grpc.Client
                 var servicerType = ServicerHelper.GetServicerTypes(proxyerOptions.Assemblies);
                 proxyers.Add(new GrpcProxyer(servicerType, proxyerOptions));
                 Assemblies.AddRange(proxyerOptions.Assemblies);
-                servicerTypes.AddRange(servicerType);
             }
-            return new Client(servicerTypes, proxyers, ProxyerOptions);
+            return new Client(proxyers, ProxyerOptions);
         }
 
         public ClientBuilder AddGlobalInterceptor<TInterceptor>() where TInterceptor : Interceptor
