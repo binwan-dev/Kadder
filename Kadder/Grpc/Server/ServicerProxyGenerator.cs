@@ -238,21 +238,21 @@ namespace Kadder.Grpc.Server
             return method;
         }
 
-		private string genCallCode(string servicer, string method, string result, string request, string @return)
+	private string genCallCode(string servicer, string method, string result, string request, string @return)
         {
             return $@"try
             {{
                 using(var scope = {ClassProviderName}.CreateScope())
                 {{
                     var servicer = scope.Provider.GetObject<{servicer}>() ?? throw new ArgumentNullException(""Not found servicer({servicer}) register!"");
-				    {result}await servicer.{method}({request});
-				    {@return}
+		    {result}await servicer.{method}({request});
+		    {@return}
                 }}
             }}
             catch(Exception ex)
             {{
                 _log.LogError(ex,$""Handler has an unknow error! Msg: {{ex.Message}}, Servicer: {servicer}, Method: {method}"");
-                throw new RpcException(new Status(StatusCode.Internal,""Server has an unknow error!""));
+		throw ex;
             }}";
         }
 
