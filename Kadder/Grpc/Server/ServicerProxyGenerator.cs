@@ -231,9 +231,7 @@ namespace Kadder.Grpc.Server
 
         private MethodDescripter generateMethodHead(ref ClassDescripter classDescripter, MethodInfo methodInfo)
         {
-            var methodName = methodInfo.Name.Replace("Async", "");
-
-            var method = new MethodDescripter(methodName, classDescripter, true);
+            var method = new MethodDescripter(methodInfo.Name, classDescripter, true);
             method.Access = AccessType.Public;
             return method;
         }
@@ -276,6 +274,13 @@ namespace Kadder.Grpc.Server
                     continue;
 
                 var callType = (CallType)int.Parse(fakeMethodTypeAttribute.Parameters[0]);
+		// This is will be remove, It's use compatible async
+                if (method.Name.EndsWith("Async"))
+                {
+                    method.Name = method.Name.Replace("Async", "");
+                    bindServicesMethod.AppendCode(generateBindServicesCode(classDescripter, method, callType, servicerType));
+                    method.Name = $"{method.Name}Async";
+                }
                 bindServicesMethod.AppendCode(generateBindServicesCode(classDescripter, method, callType, servicerType));
 
                 method.Attributes.Remove(fakeMethodTypeAttribute);
