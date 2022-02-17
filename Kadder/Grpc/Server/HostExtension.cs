@@ -32,8 +32,9 @@ namespace Microsoft.Extensions.Hosting
 
                 foreach (var assemblyName in builder.AssemblyNames)
                     builder.Assemblies.Add(Assembly.Load(assemblyName));
+                builder.Assemblies.Add(Assembly.GetEntryAssembly());
 
-		if(log.IsEnabled(LogLevel.Debug))
+                if(log.IsEnabled(LogLevel.Debug))
 		    log.LogDebug(builder.ToString());
 
                 var servicerTypes = ServicerHelper.GetServicerTypes(builder.Assemblies);
