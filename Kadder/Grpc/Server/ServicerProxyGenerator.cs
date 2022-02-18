@@ -274,13 +274,6 @@ namespace Kadder.Grpc.Server
                     continue;
 
                 var callType = (CallType)int.Parse(fakeMethodTypeAttribute.Parameters[0]);
-		// This is will be remove, It's use compatible async
-                if (method.Name.EndsWith("Async"))
-                {
-                    method.Name = method.Name.Replace("Async", "");
-                    bindServicesMethod.AppendCode(generateBindServicesCode(classDescripter, method, callType, servicerType));
-                    method.Name = $"{method.Name}Async";
-                }
                 bindServicesMethod.AppendCode(generateBindServicesCode(classDescripter, method, callType, servicerType));
 
                 method.Attributes.Remove(fakeMethodTypeAttribute);
@@ -310,6 +303,25 @@ namespace Kadder.Grpc.Server
                         {ClassBinarySerializerName}.Deserialize<{callInfo.ResponseType}>
                     )),
                     {method.Name})");
+
+            // This is will be remove, It's use compatible async
+            if (method.Name.EndsWith("Async"))
+			{
+				code.Append($@"\n                .AddMethod(new Method<{callInfo.RequestType}, {callInfo.ResponseType}>(
+                    {callInfo.MethodType},
+                    ""{@class.Namespace}.{servicerType.Name}"",
+					""{method.Name.Replace("Async","")}"",
+                    new Marshaller<{callInfo.RequestType}>(
+                        {ClassBinarySerializerName}.Serialize,
+                        {ClassBinarySerializerName}.Deserialize<{callInfo.RequestType}>
+                    ),
+                    new Marshaller<{callInfo.ResponseType}>(
+                        {ClassBinarySerializerName}.Serialize,
+                        {ClassBinarySerializerName}.Deserialize<{callInfo.ResponseType}>
+                    )),
+                    {method.Name})");
+			}
+
             return code.ToString();
         }
 
