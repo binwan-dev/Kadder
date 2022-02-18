@@ -15,7 +15,7 @@ namespace Kadder.Utils
             {
                 var types = assembly.GetModules()[0].GetTypes();
                 kServicers.AddRange(
-                    types.Where(p => p.GetInterface(typeof(IMessagingServicer).Name) != null && p.IsInterface ||
+                    types.Where(p => p.GetInterface(typeof(IMessagingServicer).Name) != null ||
                                 p.IsSubclassOf(typeof(KServicer)) ||
                                 p.IsAssignableFrom(typeof(KServicer)) ||
                                 p.Name.EndsWith("KServicer") ||
