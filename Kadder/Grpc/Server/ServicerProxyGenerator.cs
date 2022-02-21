@@ -307,7 +307,8 @@ namespace Kadder.Grpc.Server
             // This is will be remove, It's use compatible async
             if (method.Name.EndsWith("Async"))
 			{
-				code.Append($@"\n                .AddMethod(new Method<{callInfo.RequestType}, {callInfo.ResponseType}>(
+                code.AppendLine();
+                code.Append($@"                .AddMethod(new Method<{callInfo.RequestType}, {callInfo.ResponseType}>(
                     {callInfo.MethodType},
                     ""{@class.Namespace}.{servicerType.Name}"",
 					""{method.Name.Replace("Async","")}"",

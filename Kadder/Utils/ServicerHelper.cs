@@ -15,11 +15,11 @@ namespace Kadder.Utils
             {
                 var types = assembly.GetModules()[0].GetTypes();
                 kServicers.AddRange(
-                    types.Where(p => p.GetInterface(typeof(IMessagingServicer).Name) != null ||
+                    types.Where(p => (p.GetInterface(typeof(IMessagingServicer).Name) != null && p.IsInterface) ||
                                 p.IsSubclassOf(typeof(KServicer)) ||
                                 p.IsAssignableFrom(typeof(KServicer)) ||
                                 p.Name.EndsWith("KServicer") ||
-                                p.CustomAttributes.Count(x => x.AttributeType == typeof(KServicerAttribute)) > 0));
+                                p.CustomAttributes.Count(x => x.AttributeType.FullName == typeof(KServicerAttribute).FullName) > 0));
             }
             return kServicers;
 
