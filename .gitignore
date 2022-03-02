@@ -7,3 +7,4 @@ obj/
 .idea/
 /.vs/Kadder/v16
 /.vs/Kadder/DesignTimeBuild
+.cache/

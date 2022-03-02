@@ -97,14 +97,14 @@ namespace Kadder.Grpc.Client
         #region genmethod
         private MethodDescripter generateMethod(ref ClassDescripter classDescripter, MethodInfo methodInfo)
         {
+	    if (methodInfo.CustomAttributes.FirstOrDefault(p => p.AttributeType == typeof(NotGrpcMethodAttribute)) != null)
+                return generateNoGrpcMethod(ref classDescripter, methodInfo);
+	    
             var parameterType = methodInfo.ParseMethodParameter();
             var returnType = methodInfo.ParseMethodReturnParameter();
             var callType = Helper.AnalyseCallType(parameterType, returnType);
 
             classDescripter.AddUsing(parameterType.Namespace, returnType.Namespace, methodInfo.DeclaringType.Namespace);
-
-            if (methodInfo.CustomAttributes.FirstOrDefault(p => p.AttributeType == typeof(NotGrpcMethodAttribute)) != null)
-                return generateNoGrpcMethod(ref classDescripter, methodInfo, parameterType, returnType);
 
             var method = new MethodDescripter("", classDescripter);
             switch (callType)
@@ -203,7 +203,7 @@ namespace Kadder.Grpc.Client
             return method;
         }
 
-        private MethodDescripter generateNoGrpcMethod(ref ClassDescripter classDescripter, MethodInfo methodInfo, Type parameterType, Type returnType)
+        private MethodDescripter generateNoGrpcMethod(ref ClassDescripter classDescripter, MethodInfo methodInfo)
         {
             var method = new MethodDescripter(methodInfo.Name, classDescripter, false);
             method.Access = AccessType.Public;
