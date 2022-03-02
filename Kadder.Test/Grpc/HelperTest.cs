@@ -2,6 +2,7 @@ using System.Threading.Tasks;
 using Xunit;
 using Kadder.Grpc;
 using System.Collections.Generic;
+using System.IO;
 
 namespace Kadder.Test.Grpc
 {
