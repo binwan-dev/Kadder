@@ -9,7 +9,7 @@ namespace Kadder.Test.Grpc.Client
 {
     public class ServicerProxyGeneratorTest
     {
-	[Fact]
+		[Fact]
         public void Generate_Test()
         {
             var generator = new ServicerProxyGenerator("Test",new List<Type>(){ typeof(TestData) });
@@ -17,7 +17,7 @@ namespace Kadder.Test.Grpc.Client
             Assert.NotNull(testDataClassDescripter);
 	    
             var notGrpcTaskGenericMethod=testDataClassDescripter.Methods.FirstOrDefault(p => p.Name == "NotGrpcTaskGenericMethod");
-	    Assert.NotNull(notGrpcTaskGenericMethod);
+			Assert.NotNull(notGrpcTaskGenericMethod);
             Assert.Equal(notGrpcTaskGenericMethod.ReturnTypeStr, "System.Threading.Tasks.Task<Kadder.Test.Grpc.Client.ServicerProxyGeneratorTest>");
             Assert.Equal(notGrpcTaskGenericMethod.Parameters.Count, 3);
 	    
@@ -25,6 +25,11 @@ namespace Kadder.Test.Grpc.Client
             Assert.NotNull(taskGenericMethod);
 	    Assert.Equal(taskGenericMethod.ReturnTypeStr, "Task<ServicerProxyGeneratorTest>");
             Assert.Equal(taskGenericMethod.Parameters.Count, 1);
+
+			var tupleNotGrpcMethod = testDataClassDescripter.Methods.FirstOrDefault(p => p.Name == "TupleNotGrpcMethod");
+            Assert.NotNull(tupleNotGrpcMethod);
+			Assert.Equal(tupleNotGrpcMethod.ReturnTypeStr, "System.ValueTuple<int,string,Kadder.Test.Grpc.Client.ServicerProxyGeneratorTest>");
+            Assert.Equal(tupleNotGrpcMethod.Parameters.Count, 3);
         }
 
         internal class TestData
@@ -39,6 +44,13 @@ namespace Kadder.Test.Grpc.Client
             {
                 throw new System.NotImplementedException();
             }
+
+            [NotGrpcMethod]
+            public (int a, string b, ServicerProxyGeneratorTest c) TupleNotGrpcMethod(int p1, int p2, ServicerProxyGeneratorTest c)
+            {
+                throw new System.NotImplementedException();
+            }
         }
+
     }
 }
