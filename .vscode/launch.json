@@ -25,6 +25,17 @@
             "cwd": "${workspaceFolder}/Kadder.Simple.Server",
             "console": "internalConsole",
             "stopAtEntry": false
+        },
+        {
+            "name": "Simple.WebServer",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build-webserver",
+            "program": "${workspaceFolder}/Simple/WebServer/bin/Debug/net6.0/WebServer.dll",
+            "args": [],
+            "cwd": "${workspaceFolder}/Simple/WebServer",
+            "console": "internalConsole",
+            "stopAtEntry": false
         }
     ]
 }
