@@ -11,7 +11,7 @@ using Kadder.WebServer.Http.Pipe;
 
 namespace Kadder.WebServer.Socketing
 {
-    public class TcpConnection
+    public class TcpConnection 
     {
         private readonly Socket _socket;
         private readonly SocketAsyncEventArgs _sendSocketArgs;
@@ -23,6 +23,7 @@ namespace Kadder.WebServer.Socketing
         private int _receiving = 0;
         private int _parsing = 0;
         private readonly ConcurrentQueue<ReceiveData> _receiveDataQueue;
+        private readonly SocketAwaitableEventArgs _receiveArgs;
 
         public TcpConnection(Socket socket, ILogger log, int receiveBufferSize, int sendBufferSize)
         {
@@ -38,11 +39,44 @@ namespace Kadder.WebServer.Socketing
             _receiveSocketArgs.AcceptSocket = _socket;
             _receiveSocketArgs.Completed += CompletedReceive;
             _receiveDataQueue = new ConcurrentQueue<ReceiveData>();
-
-            Task.Factory.StartNew(tryReceive);
+            _receiveArgs = new SocketAwaitableEventArgs();
         }
 
-        private void tryReceive()
+        public async Task DoReceive()
+        {
+            var args = new SocketAwaitableEventArgs();
+            while (true)
+            {
+                var buffer = new byte[1024 * 1024 * 2];
+                var offest=await ReceiveAsync(buffer);
+                if (offest == 0)
+                {
+                    SocketHelper.ShutdownSocket(_socket, SocketError.AccessDenied, "Socket fin close", _log);
+                    return;
+                }
+		
+		var receiveData = new ReceiveData()
+		{
+		    Data = buffer,
+		    Length = offest
+		};
+		_receiveDataQueue.Enqueue(receiveData);
+		_receiveArgs.SetBuffer(null);
+		tryParsing();
+            }
+        }
+
+        private SocketAwaitableEventArgs ReceiveAsync(Memory<byte> buffer)
+        {
+            _receiveArgs.SetBuffer(buffer);
+            if (!_socket.ReceiveAsync(_receiveArgs))
+            {
+                _receiveArgs.Complete();
+            }
+            return _receiveArgs;
+        }
+
+        private async Task tryReceive()
         {
             if (Interlocked.CompareExchange(ref _receiving, 1, 0) != 0)
                 return;

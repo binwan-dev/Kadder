@@ -1,6 +1,6 @@
 using System;
 
-namespace Kadder.WebServer.Socketing
+namespace Kadder.Utils.WebServer.Socketing
 {
     public class BufferPool
     {

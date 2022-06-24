@@ -10,7 +10,7 @@ namespace Kadder.WebServer.Socketing
         {
             if (error != SocketError.Success || ex != null)
             {
-                log.LogError(ex, message);
+                // log.LogError(ex, message);
             }
 
             var remote = socket.RemoteEndPoint.ToString();
@@ -21,11 +21,11 @@ namespace Kadder.WebServer.Socketing
                     socket.Disconnect(true);
                 socket.Close();
                 socket.Dispose();
-                log.LogInformation($"the socket({remote}) has been closed!");
+                // log.LogInformation($"the socket({remote}) has been closed!");
             }
             catch (Exception closeEx)
             {
-                log.LogError(closeEx, $"the socket({remote}) close failed!");
+                // log.LogError(closeEx, $"the socket({remote}) close failed!");
             }
         }
     }

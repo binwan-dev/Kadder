@@ -60,20 +60,36 @@ namespace Kadder.WebServer.Socketing
             _log.LogInformation("waiting socket accept....");
         }
 
-        private void startAccepting()
+        private async Task startAccepting()
         {
-            try
+            var args = new SocketAwaitableEventArgs();
+            while (true)
             {
-                if (!_socket.AcceptAsync(_acceptingSocketArgs))
-                    CompletedAccept(_socket, _acceptingSocketArgs);
+                await acceptAsync(args);
+                ProcessAccept(args.AcceptSocket, args.SocketError);
+                args.AcceptSocket = null;
             }
-            catch (Exception ex)
-            {
-                _log.LogError(ex, "accept failed! will be reaccept for 2 seconds!");
-                System.Threading.Thread.Sleep(2000);
-                startAccepting();
-            }
+
+            // try
+            // {
+            //     if (!_socket.AcceptAsync(_acceptingSocketArgs))
+            //         CompletedAccept(_socket, _acceptingSocketArgs);
+            // }
+            // catch (Exception ex)
+            // {
+            //     _log.LogError(ex, "accept failed! will be reaccept for 2 seconds!");
+            //     System.Threading.Thread.Sleep(2000);
+            //     startAccepting();
+            // }
         }
+
+        private SocketAwaitableEventArgs acceptAsync(SocketAwaitableEventArgs args)
+        {
+            if(!_socket.AcceptAsync(args))
+                args.Complete();
+            return args;
+        }
+
 
         private void CompletedAccept(object sender, SocketAsyncEventArgs e)
         {
@@ -100,11 +116,13 @@ namespace Kadder.WebServer.Socketing
                 return;
             }
 
-            Task.Factory.StartNew(() =>
-            {
-                var connection = new TcpConnection(socket, _connectionLog, 1024 * 1024 * 2, 1024 * 1024 * 2);
-                _log.LogInformation($"accept new socket({socket.RemoteEndPoint.ToString()})!");
-            });
+            var connection = new TcpConnection(socket, _connectionLog, 1024 * 1024 * 2, 1024 * 1024 * 2);
+            _ = handleConnection(connection);
+        }
+
+        private async Task handleConnection(TcpConnection connection)
+        {
+            await connection.DoReceive();
         }
     }
 }
