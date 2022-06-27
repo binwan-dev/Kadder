@@ -54,15 +54,21 @@ namespace Kadder.WebServer.Socketing
                     SocketHelper.ShutdownSocket(_socket, SocketError.AccessDenied, "Socket fin close", _log);
                     return;
                 }
-		
-		var receiveData = new ReceiveData()
-		{
-		    Data = buffer,
-		    Length = offest
-		};
-		_receiveDataQueue.Enqueue(receiveData);
-		_receiveArgs.SetBuffer(null);
-		tryParsing();
+
+                var response = new Response(_socket);
+                response.Version = "HTTP/1.1";
+                response.StatusCode = StatusCode.OK;
+		response.Write(Encoding.UTF8.GetBytes("Hello world!"));
+		response.Flush();
+
+		// var receiveData = new ReceiveData()
+		// {
+		//     Data = buffer,
+		//     Length = offest
+		// };
+		// _receiveDataQueue.Enqueue(receiveData);
+		// _receiveArgs.SetBuffer(null);
+		// tryParsing();
             }
         }
 
