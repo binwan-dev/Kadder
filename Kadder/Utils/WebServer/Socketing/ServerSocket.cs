@@ -57,7 +57,7 @@ namespace Kadder.Utils.WebServer.Socketing
 		_socket.Listen(_listenPendingConns);
 	    else
                 _socket.Listen();
-            var _ = startAccepting;
+            var _ = startAccepting();
             _log.LogInformation($"socket listening for {_listenEndPoint.ToString()}");
             _log.LogInformation("waiting socket accept....");
         }
@@ -67,6 +67,7 @@ namespace Kadder.Utils.WebServer.Socketing
             var args = new SocketAwaitableEventArgs();
             while (true)
             {
+                args.AcceptSocket = null;
                 await acceptAsync(args);
                 var _ = processAccept(args.AcceptSocket, args.SocketError);
             }

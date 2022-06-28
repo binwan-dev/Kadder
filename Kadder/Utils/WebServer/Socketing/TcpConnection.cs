@@ -184,6 +184,7 @@ namespace Kadder.Utils.WebServer.Socketing
             _socket.Close();
             _socket.Dispose();
             _socket = null;
+            TcpConnectionPool.Instance.ReturnConnection(this);
         }
 
         private struct ReceiveData
