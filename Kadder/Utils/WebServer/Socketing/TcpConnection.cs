@@ -4,26 +4,25 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Text;
 using Kadder.WebServer.Http;
 using Kadder.WebServer.Http.Pipe;
 
-namespace Kadder.WebServer.Socketing
+namespace Kadder.Utils.WebServer.Socketing
 {
-    public class TcpConnection 
+    public class TcpConnection : IDisposable
     {
-        private readonly Socket _socket;
-        private readonly SocketAsyncEventArgs _sendSocketArgs;
-        private readonly SocketAsyncEventArgs _receiveSocketArgs;
+        private Socket _socket;
+        private SocketAwaitableEventArgs _sendSocketArgs;
+        private SocketAwaitableEventArgs _receiveSocketArgs;
         private readonly int _receiveBufferSize;
         private readonly int _sendBufferSize;
         private readonly ILogger _log;
         private int _sending = 0;
         private int _receiving = 0;
         private int _parsing = 0;
+        private bool _isDisposed;
         private readonly ConcurrentQueue<ReceiveData> _receiveDataQueue;
-        private readonly SocketAwaitableEventArgs _receiveArgs;
 
         public TcpConnection(Socket socket, ILogger log, int receiveBufferSize, int sendBufferSize)
         {
@@ -32,103 +31,53 @@ namespace Kadder.WebServer.Socketing
             _sendBufferSize = sendBufferSize;
             _receiveBufferSize = receiveBufferSize;
 
-            _sendSocketArgs = new SocketAsyncEventArgs();
+            _sendSocketArgs = new SocketAwaitableEventArgs();
             _sendSocketArgs.AcceptSocket = _socket;
-            _sendSocketArgs.Completed += CompletedSend;
-            _receiveSocketArgs = new SocketAsyncEventArgs();
+            _receiveSocketArgs = new SocketAwaitableEventArgs();
             _receiveSocketArgs.AcceptSocket = _socket;
-            _receiveSocketArgs.Completed += CompletedReceive;
             _receiveDataQueue = new ConcurrentQueue<ReceiveData>();
-            _receiveArgs = new SocketAwaitableEventArgs();
+        }
+
+        internal void SetNewFromPool(Socket socket)
+        {
+            _socket = socket;
+            _sendSocketArgs.AcceptSocket = _socket;
+            _receiveSocketArgs.AcceptSocket = _socket;
         }
 
         public async Task DoReceive()
         {
-            var args = new SocketAwaitableEventArgs();
             while (true)
             {
-                var buffer = new byte[1024 * 1024 * 2];
-                var offest=await ReceiveAsync(buffer);
+                var buffer = BufferPool.Instance.ArrayPool.Rent(1024 * 1024 * 2);
+                var offest = await receiveAsync(buffer);
                 if (offest == 0)
                 {
-                    SocketHelper.ShutdownSocket(_socket, SocketError.AccessDenied, "Socket fin close", _log);
+                    Dispose();
                     return;
                 }
-
-                var response = new Response(_socket);
-                response.Version = "HTTP/1.1";
-                response.StatusCode = StatusCode.OK;
-		response.Write(Encoding.UTF8.GetBytes("Hello world!"));
-		response.Flush();
-
-		// var receiveData = new ReceiveData()
-		// {
-		//     Data = buffer,
-		//     Length = offest
-		// };
-		// _receiveDataQueue.Enqueue(receiveData);
-		// _receiveArgs.SetBuffer(null);
-		// tryParsing();
+		
+                var receiveData = new ReceiveData()
+                {
+                    Data = buffer,
+                    Length = offest
+                };
+                _receiveDataQueue.Enqueue(receiveData);
+		tryParsing();
             }
         }
 
-        private SocketAwaitableEventArgs ReceiveAsync(Memory<byte> buffer)
+        private SocketAwaitableEventArgs receiveAsync(Memory<byte> buffer)
         {
-            _receiveArgs.SetBuffer(buffer);
-            if (!_socket.ReceiveAsync(_receiveArgs))
+            _receiveSocketArgs.SetBuffer(buffer);
+            if (!_socket.ReceiveAsync(_receiveSocketArgs))
             {
-                _receiveArgs.Complete();
+                _receiveSocketArgs.Complete();
             }
-            return _receiveArgs;
+            return _receiveSocketArgs;
         }
 
-        private async Task tryReceive()
-        {
-            if (Interlocked.CompareExchange(ref _receiving, 1, 0) != 0)
-                return;
-
-            try
-            {
-                _receiveSocketArgs.SetBuffer(new byte[_receiveBufferSize], 0, _receiveBufferSize);
-                if (!_socket.ReceiveAsync(_receiveSocketArgs))
-                    CompletedReceive(_socket, _receiveSocketArgs);
-            }
-            catch (Exception ex)
-            {
-                SocketHelper.ShutdownSocket(_socket, SocketError.Success, $"the socket({_socket.RemoteEndPoint.ToString()}) receive has an know error!", _log, ex);
-            }
-        }
-
-        private void CompletedReceive(object sender, SocketAsyncEventArgs e) => ProcessReceive(e);
-
-        private void ProcessReceive(SocketAsyncEventArgs receiveArgs)
-        {
-            if (receiveArgs.SocketError != SocketError.Success)
-            {
-                SocketHelper.ShutdownSocket(receiveArgs.AcceptSocket, receiveArgs.SocketError, $"the socket({receiveArgs.AcceptSocket.RemoteEndPoint.ToString()}) receive msg failed!", _log);
-                return;
-            }
-            if (receiveArgs.BytesTransferred == 0)
-            {
-                SocketHelper.ShutdownSocket(receiveArgs.AcceptSocket, SocketError.Disconnecting, $"the socket({receiveArgs.AcceptSocket.RemoteEndPoint.ToString()}) disconnected!", _log);
-                return;
-            }
-
-            var receiveData = new ReceiveData()
-            {
-                Data = receiveArgs.Buffer,
-                Length = receiveArgs.BytesTransferred
-            };
-            _receiveDataQueue.Enqueue(receiveData);
-            receiveArgs.SetBuffer(null);
-            tryParsing();
-
-            exitReceive();
-            tryReceive();
-        }
-
-        private void exitReceive() => Interlocked.Exchange(ref _receiving, 0);
-
+  
         private void tryParsing()
         {
             if (Interlocked.CompareExchange(ref _parsing, 1, 0) != 0)
@@ -153,7 +102,7 @@ namespace Kadder.WebServer.Socketing
             Request request = null;
             while (true)
             {
-                if (!_receiveDataQueue.TryDequeue(out ReceiveData receiveData))
+                if (!_receiveDataQueue.TryDequeue(out ReceiveData receiveData)||_isDisposed)
                     return;
 
                 while (true)
@@ -175,7 +124,7 @@ namespace Kadder.WebServer.Socketing
                         }
                         if (!request.IsValid())
                         {
-                            SocketHelper.ShutdownSocket(_socket, SocketError.ConnectionReset, "Invalid http request", _log);
+                            Dispose();
                             return;
                         }
                         receiveData.Data = receiveData.Data.Slice(index + 1);
@@ -193,7 +142,7 @@ namespace Kadder.WebServer.Socketing
                         }
                         if (!request.IsValidHeader())
                         {
-                            SocketHelper.ShutdownSocket(_socket, SocketError.ConnectionAborted, "Invalid http request!", _log);
+                            Dispose();
                             return;
                         }
                         receiveData.Data = receiveData.Data.Slice(index + 4);
@@ -201,13 +150,8 @@ namespace Kadder.WebServer.Socketing
                     receiveData.Data = request.ParseBody(receiveData.Data);
                     if (request.IsParseBodyDone())
                     {
-                        var receiveRequest = request;
-                        Task.Factory.StartNew(() =>
-                        {
-                            var response = new Response(_socket);
-                            var context = new HttpContext(receiveRequest, response);
-                            new InitPipe().Handler(context);
-                        });
+			BufferPool.Instance.ArrayPool.Return(receiveData.Data.Array);
+                        var _ = handleRequest(request);
                         request = null;
                     }
                 }
@@ -215,9 +159,31 @@ namespace Kadder.WebServer.Socketing
             }
         }
 
+        private async Task handleRequest(Request request)
+        {
+	    var response = new Response(_socket);
+	    var context = new HttpContext(request, response);
+	    await new InitPipe().HandlerAsync(context);
+	    Dispose();
+	}
+
         private void CompletedSend(object sender, SocketAsyncEventArgs e)
         {
             throw new NotImplementedException();
+        }
+	
+        public void Dispose()
+        {
+	    if(_isDisposed)
+                return;
+
+            _sendSocketArgs.AcceptSocket = null;
+            _receiveSocketArgs.AcceptSocket = null;
+            _receiveDataQueue.Clear();
+            _socket.Shutdown(SocketShutdown.Both);
+            _socket.Close();
+            _socket.Dispose();
+            _socket = null;
         }
 
         private struct ReceiveData

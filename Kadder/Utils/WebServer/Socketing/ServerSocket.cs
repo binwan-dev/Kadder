@@ -5,7 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 
-namespace Kadder.WebServer.Socketing
+namespace Kadder.Utils.WebServer.Socketing
 {
     public class ServerSocket
     {
@@ -18,7 +18,7 @@ namespace Kadder.WebServer.Socketing
         private readonly ILogger<ServerSocket> _log;
         private readonly ILogger<TcpConnection> _connectionLog;
 
-        public ServerSocket(string listenAddress, int port, ILogger<ServerSocket> log, ILogger<TcpConnection> connectionLog, int listenPendingConns = 100)
+        public ServerSocket(string listenAddress, int port, ILogger<ServerSocket> log, ILogger<TcpConnection> connectionLog, int listenPendingConns = -1)
         {
             _listenPendingConns = listenPendingConns;
             _log = log;
@@ -54,8 +54,11 @@ namespace Kadder.WebServer.Socketing
         private void tryStarting()
         {
             _socket.Bind(_listenEndPoint);
-            _socket.Listen(_listenPendingConns);
-            Task.Factory.StartNew(startAccepting);
+	    if(_listenPendingConns>0)
+		_socket.Listen(_listenPendingConns);
+	    else
+                _socket.Listen();
+            var _ = startAccepting;
             _log.LogInformation($"socket listening for {_listenEndPoint.ToString()}");
             _log.LogInformation("waiting socket accept....");
         }
@@ -66,21 +69,8 @@ namespace Kadder.WebServer.Socketing
             while (true)
             {
                 await acceptAsync(args);
-                ProcessAccept(args.AcceptSocket, args.SocketError);
-                args.AcceptSocket = null;
+                var _ = processAccept(args.AcceptSocket, args.SocketError);
             }
-
-            // try
-            // {
-            //     if (!_socket.AcceptAsync(_acceptingSocketArgs))
-            //         CompletedAccept(_socket, _acceptingSocketArgs);
-            // }
-            // catch (Exception ex)
-            // {
-            //     _log.LogError(ex, "accept failed! will be reaccept for 2 seconds!");
-            //     System.Threading.Thread.Sleep(2000);
-            //     startAccepting();
-            // }
         }
 
         private SocketAwaitableEventArgs acceptAsync(SocketAwaitableEventArgs args)
@@ -90,25 +80,7 @@ namespace Kadder.WebServer.Socketing
             return args;
         }
 
-
-        private void CompletedAccept(object sender, SocketAsyncEventArgs e)
-        {
-            try
-            {
-                ProcessAccept(e.AcceptSocket, e.SocketError);
-                e.AcceptSocket = null;
-            }
-            catch (Exception ex)
-            {
-                SocketHelper.ShutdownSocket(e.AcceptSocket, e.SocketError, $"the socket({e.AcceptSocket.RemoteEndPoint.ToString()}) accept has an know error!", _log, ex);
-            }
-            finally
-            {
-                startAccepting();
-            }
-        }
-
-        private void ProcessAccept(Socket socket, SocketError socketError)
+        private async Task processAccept(Socket socket, SocketError socketError)
         {
             if (socketError != SocketError.Success)
             {
@@ -116,12 +88,7 @@ namespace Kadder.WebServer.Socketing
                 return;
             }
 
-            var connection = new TcpConnection(socket, _connectionLog, 1024 * 1024 * 2, 1024 * 1024 * 2);
-            _ = handleConnection(connection);
-        }
-
-        private async Task handleConnection(TcpConnection connection)
-        {
+            var connection = TcpConnectionPool.Instance.GetOrCreateConnection(socket, _connectionLog, 1024 * 1024 * 2, 1024 * 1024 * 2);
             await connection.DoReceive();
         }
     }

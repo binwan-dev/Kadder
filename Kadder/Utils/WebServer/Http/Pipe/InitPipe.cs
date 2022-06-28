@@ -1,5 +1,6 @@
 using System.Text;
 using System.Collections.Concurrent;
+using System.Threading.Tasks;
 
 namespace Kadder.WebServer.Http.Pipe
 {
@@ -12,13 +13,13 @@ namespace Kadder.WebServer.Http.Pipe
             _contextQueue = new ConcurrentQueue<HttpContext>();
         }
 
-        public void Handler(HttpContext context)
+        public async Task HandlerAsync(HttpContext context)
         {
             _contextQueue.Enqueue(context);
             context.Response.Version = context.Request.Version;
             context.Response.StatusCode = StatusCode.OK;
-            context.Response.Write(Encoding.UTF8.GetBytes("Hello world!"));
-            context.Response.Flush();
+            await context.Response.WriteAsync(Encoding.UTF8.GetBytes("Hello world!"));
+            await context.Response.FlushAsync();
         }
     }
 }

@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Net.Sockets;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace Kadder.WebServer.Http
 {
@@ -26,28 +27,28 @@ namespace Kadder.WebServer.Http
 
         public Lazy<MemoryStream> Body { get; set; }
 
-        public void Write(byte[] body)
+        public ValueTask WriteAsync(byte[] body)
         {
-            Body.Value.Write(body);
+            return Body.Value.WriteAsync(body);
         }
 
-        public void Flush()
+        public async Task FlushAsync()
         {
             Header.Add("Content-Length", Body.Value.Length.ToString());
-            var stream = genHttpStream();
-            _socket.Send(stream.GetBuffer(), 0, (int)stream.Length, SocketFlags.None);
+            using var stream = await genHttpStreamAsync();
+            await _socket.SendAsync(stream.GetBuffer(), SocketFlags.None);
         }
 
-        private MemoryStream genHttpStream()
+        private async Task<MemoryStream> genHttpStreamAsync()
         {
             var stream = new MemoryStream();
-            stream.Write(Encoding.UTF8.GetBytes($"{Version} {StatusCode} OK\r\n"));
+            await stream.WriteAsync(Encoding.UTF8.GetBytes($"{Version} {StatusCode} OK\r\n"));
             foreach (var item in Header)
             {
-                stream.Write(Encoding.UTF8.GetBytes($"{item.Key}: {item.Value}\r\n"));
+                await stream.WriteAsync(Encoding.UTF8.GetBytes($"{item.Key}: {item.Value}\r\n"));
             }
-            stream.Write(new byte[2] { 13, 10 });
-            stream.Write(Body.Value.GetBuffer(), 0, (int)Body.Value.Length);
+            await stream.WriteAsync(new byte[2] { 13, 10 });
+            await stream.WriteAsync(Body.Value.GetBuffer(), 0, (int)Body.Value.Length);
             return stream;
         }
     }
