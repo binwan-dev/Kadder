@@ -2,7 +2,7 @@ using System;
 using System.Net.Sockets;
 using Microsoft.Extensions.Logging;
 
-namespace Kadder.WebServer.Socketing
+namespace Kadder.Utils.WebServer.Socketing
 {
     public class SocketHelper
     {

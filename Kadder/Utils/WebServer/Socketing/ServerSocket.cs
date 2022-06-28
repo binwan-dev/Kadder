@@ -26,7 +26,6 @@ namespace Kadder.Utils.WebServer.Socketing
             _listenEndPoint = new IPEndPoint(IPAddress.Parse(listenAddress), port);
             _socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             _acceptingSocketArgs = new SocketAsyncEventArgs();
-            _acceptingSocketArgs.Completed += CompletedAccept;
         }
 
         public void Start()

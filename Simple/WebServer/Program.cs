@@ -1,5 +1,5 @@
 ﻿using Kadder.Simple.WebServer;
-using Kadder.WebServer.Socketing;
+using Kadder.Utils.WebServer.Socketing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
