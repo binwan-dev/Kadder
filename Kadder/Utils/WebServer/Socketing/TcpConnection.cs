@@ -7,6 +7,10 @@ using System.Collections.Concurrent;
 using System.Text;
 using Kadder.WebServer.Http;
 using Kadder.WebServer.Http.Pipe;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Buffers;
 
 namespace Kadder.Utils.WebServer.Socketing
 {
@@ -22,20 +26,33 @@ namespace Kadder.Utils.WebServer.Socketing
         private int _receiving = 0;
         private int _parsing = 0;
         private bool _isDisposed;
-        private readonly ConcurrentQueue<ReceiveData> _receiveDataQueue;
+        private readonly Queue<ReceiveData> _receiveDataQueue;
+	public Stopwatch stopWatch = new Stopwatch();
+        public static byte[] sendData;
 
-        public TcpConnection(Socket socket, ILogger log, int receiveBufferSize, int sendBufferSize)
+        static TcpConnection()
+        {
+	    var bodyData = Encoding.UTF8.GetBytes("Hello World");
+            var s = new MemoryStream();
+            s.Write(Encoding.UTF8.GetBytes($"HTTP/1.1 200 OK\r\n"));
+            s.Write(Encoding.UTF8.GetBytes($"Content-Length: {bodyData.Length}\r\n"));
+            s.Write(new byte[2] { 13, 10 });
+	    s.Write(bodyData);
+            sendData = s.ToArray();
+	}
+
+        public TcpConnection(Socket socket, ILogger log)
         {
             _socket = socket;
             _log = log;
-            _sendBufferSize = sendBufferSize;
-            _receiveBufferSize = receiveBufferSize;
+            // _sendBufferSize = sendBufferSize;
+            // _receiveBufferSize = receiveBufferSize;
 
             _sendSocketArgs = new SocketAwaitableEventArgs();
             _sendSocketArgs.AcceptSocket = _socket;
             _receiveSocketArgs = new SocketAwaitableEventArgs();
             _receiveSocketArgs.AcceptSocket = _socket;
-            _receiveDataQueue = new ConcurrentQueue<ReceiveData>();
+            _receiveDataQueue = new Queue<ReceiveData>();
         }
 
         internal void SetNewFromPool(Socket socket)
@@ -49,25 +66,28 @@ namespace Kadder.Utils.WebServer.Socketing
         {
             while (true)
             {
-                var buffer = BufferPool.Instance.ArrayPool.Rent(1024 * 1024 * 2);
-                var offest = await receiveAsync(buffer);
+		var buffer = BufferPool.Instance.ArrayPool.Rent(1024 * 1024 * 2);
+		var offest = await receiveAsync(buffer);
                 if (offest == 0)
                 {
-                    Dispose();
+                    Console.WriteLine(100);
                     return;
-                }
-		
-                var receiveData = new ReceiveData()
-                {
-                    Data = buffer,
-                    Length = offest
-                };
-                _receiveDataQueue.Enqueue(receiveData);
-		tryParsing();
+                } 
+
+                var _= handleRequest(buffer);
+
+
+                // var receiveData = new ReceiveData()
+                // {XSXS
+                //     Data = buffer,
+                //     Length = offest
+                // };
+                // _receiveDataQueue.Enqueue(receiveData);
+                // var _ = Task.Run(tryParsing);
             }
         }
 
-        private SocketAwaitableEventArgs receiveAsync(Memory<byte> buffer)
+        public SocketAwaitableEventArgs receiveAsync(Memory<byte> buffer)
         {
             _receiveSocketArgs.SetBuffer(buffer);
             if (!_socket.ReceiveAsync(_receiveSocketArgs))
@@ -109,10 +129,14 @@ namespace Kadder.Utils.WebServer.Socketing
                 {
                     if (receiveData.Data.Offset >= receiveData.Length)
                         break;
-
+		    
                     if (request == null)
                     {
+			// stopWatch.Restart();
                         request = new Request();
+			// stopWatch.Stop();
+			// if(stopWatch.ElapsedMilliseconds>0)
+			    // Console.WriteLine($"handle used {stopWatch.ElapsedMilliseconds} ms");
                         var index = 0;
                         for (; index < receiveData.Length; index++)
                         {
@@ -150,8 +174,8 @@ namespace Kadder.Utils.WebServer.Socketing
                     receiveData.Data = request.ParseBody(receiveData.Data);
                     if (request.IsParseBodyDone())
                     {
-			BufferPool.Instance.ArrayPool.Return(receiveData.Data.Array);
-                        var _ = handleRequest(request);
+                        BufferPool.Instance.ArrayPool.Return(receiveData.Data.Array);
+                        var _ = handleRequest(receiveData.Data.Array);
                         request = null;
                     }
                 }
@@ -159,13 +183,27 @@ namespace Kadder.Utils.WebServer.Socketing
             }
         }
 
-        private async Task handleRequest(Request request)
+        private async Task handleRequest(byte[] buffer)
         {
-	    var response = new Response(_socket);
-	    var context = new HttpContext(request, response);
-	    await new InitPipe().HandlerAsync(context);
-	    Dispose();
-	}
+            // var s = new Stopwatch();
+            // s.Start();
+            // var response = new Response(_socket);
+            // s.Stop();
+            // if(s.ElapsedMilliseconds>0)
+            //     Console.WriteLine(s.ElapsedMilliseconds);
+            // var context = new HttpContext(request, response);
+            // await new InitPipe().HandlerAsync(context);
+
+            // var bodyData = Encoding.UTF8.GetBytes("Hello World");
+            // await _socket.SendAsync(Encoding.UTF8.GetBytes($"HTTP/1.1 200 OK\r\n"),SocketFlags.None);
+            // await _socket.SendAsync(Encoding.UTF8.GetBytes($"Content-Length: {bodyData.Length}\r\n"), SocketFlags.None);
+            // await _socket.SendAsync(new byte[2] { 13, 10 },SocketFlags.None);
+            // await _socket.SendAsync(bodyData,SocketFlags.None);
+
+            BufferPool.Instance.ArrayPool.Return(buffer);
+            await _socket.SendAsync(sendData, SocketFlags.None);
+            _socket.Shutdown(SocketShutdown.Both);
+        }
 
         private void CompletedSend(object sender, SocketAsyncEventArgs e)
         {

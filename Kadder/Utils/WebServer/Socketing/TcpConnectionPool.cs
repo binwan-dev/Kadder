@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Concurrent;
 using System.Net.Sockets;
 using Microsoft.Extensions.Logging;
@@ -22,15 +23,15 @@ namespace Kadder.Utils.WebServer.Socketing
             _freeQueue.Enqueue(connection);
         }
 
-        public TcpConnection GetOrCreateConnection(Socket socket,ILogger<TcpConnection> log,int receiveBufferSize,int sendBufferSize)
+        public TcpConnection GetOrCreateConnection(Socket socket,ILogger<TcpConnection> log)
         {
             if (_freeQueue.TryDequeue(out TcpConnection connection))
             {
                 connection.SetNewFromPool(socket);
                 return connection;
             }
-
-            return new TcpConnection(socket, log, receiveBufferSize, sendBufferSize);
+	    
+            return new TcpConnection(socket, log);
         }
     }
 }

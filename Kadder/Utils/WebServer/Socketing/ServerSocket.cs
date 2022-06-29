@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
@@ -68,7 +69,7 @@ namespace Kadder.Utils.WebServer.Socketing
             while (true)
             {
                 args.AcceptSocket = null;
-                await acceptAsync(args);
+                await acceptAsync(args);		
                 var _ = processAccept(args.AcceptSocket, args.SocketError);
             }
         }
@@ -88,8 +89,17 @@ namespace Kadder.Utils.WebServer.Socketing
                 return;
             }
 
-            var connection = TcpConnectionPool.Instance.GetOrCreateConnection(socket, _connectionLog, 1024 * 1024 * 2, 1024 * 1024 * 2);
+            var connection = TcpConnectionPool.Instance.GetOrCreateConnection(socket, _connectionLog);
+            // ThreadPool.QueueUserWorkItem(async s => await connection.DoReceive());
             await connection.DoReceive();
+
+            // var buffer = BufferPool.Instance.ArrayPool.Rent(1024 * 1024 * 2);
+            // await connection.receiveAsync(buffer);
+            // BufferPool.Instance.ArrayPool.Return(buffer);
+            // await socket.SendAsync(TcpConnection.sendData, SocketFlags.None);
+            // socket.Shutdown(SocketShutdown.Both);
+
+            // await connection.DoReceive();
         }
     }
 }
