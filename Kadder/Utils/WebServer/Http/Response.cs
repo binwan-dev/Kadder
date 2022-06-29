@@ -4,7 +4,7 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Kadder.WebServer.Http
+namespace Kadder.Utils.WebServer.Http
 {
     public class Response
     {

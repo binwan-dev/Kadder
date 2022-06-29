@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Net.Sockets;
+using Kadder.Utils.WebServer.Http;
 using Microsoft.Extensions.Logging;
 
 namespace Kadder.Utils.WebServer.Socketing
@@ -30,8 +31,8 @@ namespace Kadder.Utils.WebServer.Socketing
                 connection.SetNewFromPool(socket);
                 return connection;
             }
-	    
-            return new TcpConnection(socket, log);
+
+            return new HttpConnection(socket, null);
         }
     }
 }

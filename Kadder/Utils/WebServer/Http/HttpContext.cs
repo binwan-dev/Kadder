@@ -1,4 +1,4 @@
-namespace Kadder.WebServer.Http
+namespace Kadder.Utils.WebServer.Http
 {
     public class HttpContext
     {

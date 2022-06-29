@@ -1,7 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 
-namespace Kadder.WebServer.Http
+namespace Kadder.Utils.WebServer.Http
 {
     public class Header : Dictionary<string, string>, IDictionary<string, string>
     {
@@ -9,7 +9,7 @@ namespace Kadder.WebServer.Http
 
         private long _contentLength = -1;
 
-        public long ContentLength
+        internal long ContentLength
         {
             get
             {

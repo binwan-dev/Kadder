@@ -3,22 +3,19 @@ using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using System.Collections.Concurrent;
-using System.Text;
-using Kadder.WebServer.Http;
-using Kadder.WebServer.Http.Pipe;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Buffers;
+using System.Text;
+using Kadder.Utils.WebServer.Http;
 
 namespace Kadder.Utils.WebServer.Socketing
 {
-    public class TcpConnection : IDisposable
+    public abstract class TcpConnection 
     {
-        private Socket _socket;
+        protected Socket _socket;
         private SocketAwaitableEventArgs _sendSocketArgs;
-        private SocketAwaitableEventArgs _receiveSocketArgs;
+        protected SocketAwaitableEventArgs _receiveSocketArgs;
         private readonly int _receiveBufferSize;
         private readonly int _sendBufferSize;
         private readonly ILogger _log;
@@ -41,10 +38,9 @@ namespace Kadder.Utils.WebServer.Socketing
             sendData = s.ToArray();
 	}
 
-        public TcpConnection(Socket socket, ILogger log)
+        public TcpConnection(Socket socket)
         {
             _socket = socket;
-            _log = log;
             // _sendBufferSize = sendBufferSize;
             // _receiveBufferSize = receiveBufferSize;
 
@@ -62,32 +58,9 @@ namespace Kadder.Utils.WebServer.Socketing
             _receiveSocketArgs.AcceptSocket = _socket;
         }
 
-        public async Task DoReceive()
-        {
-            while (true)
-            {
-		var buffer = BufferPool.Instance.ArrayPool.Rent(1024 * 1024 * 2);
-		var offest = await receiveAsync(buffer);
-                if (offest == 0)
-                {
-                    Console.WriteLine(100);
-                    return;
-                } 
+        public abstract Task DoReceiveAsync();
 
-                var _= handleRequest(buffer);
-
-
-                // var receiveData = new ReceiveData()
-                // {XSXS
-                //     Data = buffer,
-                //     Length = offest
-                // };
-                // _receiveDataQueue.Enqueue(receiveData);
-                // var _ = Task.Run(tryParsing);
-            }
-        }
-
-        public SocketAwaitableEventArgs receiveAsync(Memory<byte> buffer)
+        protected SocketAwaitableEventArgs receiveAsync(Memory<byte> buffer)
         {
             _receiveSocketArgs.SetBuffer(buffer);
             if (!_socket.ReceiveAsync(_receiveSocketArgs))
@@ -129,55 +102,10 @@ namespace Kadder.Utils.WebServer.Socketing
                 {
                     if (receiveData.Data.Offset >= receiveData.Length)
                         break;
-		    
+
                     if (request == null)
                     {
-			// stopWatch.Restart();
-                        request = new Request();
-			// stopWatch.Stop();
-			// if(stopWatch.ElapsedMilliseconds>0)
-			    // Console.WriteLine($"handle used {stopWatch.ElapsedMilliseconds} ms");
-                        var index = 0;
-                        for (; index < receiveData.Length; index++)
-                        {
-                            if (index > 0 && receiveData.Data[index - 1] == '\r' && receiveData.Data[index] == '\n')
-                            {
-                                request.ParseURI(receiveData.Data.Slice(0, index));
-                                break;
-                            }
-                        }
-                        if (!request.IsValid())
-                        {
-                            Dispose();
-                            return;
-                        }
-                        receiveData.Data = receiveData.Data.Slice(index + 1);
-                        char s = (char)receiveData.Data[0];
-
-                        for (; index < receiveData.Length; index++)
-                        {
-                            if (receiveData.Data.Count > index + 3 &&
-                                receiveData.Data[index] == '\r' && receiveData.Data[index + 1] == '\n' &&
-                                receiveData.Data[index + 2] == '\r' && receiveData.Data[index + 3] == '\n')
-                            {
-                                request.ParseHeader(receiveData.Data.Slice(0, index + 2));
-                                break;
-                            }
-                        }
-                        if (!request.IsValidHeader())
-                        {
-                            Dispose();
-                            return;
-                        }
-                        receiveData.Data = receiveData.Data.Slice(index + 4);
-                    }
-                    receiveData.Data = request.ParseBody(receiveData.Data);
-                    if (request.IsParseBodyDone())
-                    {
-                        BufferPool.Instance.ArrayPool.Return(receiveData.Data.Array);
-                        var _ = handleRequest(receiveData.Data.Array);
-                        request = null;
-                    }
+                    }	// stopWatch.Restart();
                 }
                 break;
             }
@@ -203,26 +131,6 @@ namespace Kadder.Utils.WebServer.Socketing
             BufferPool.Instance.ArrayPool.Return(buffer);
             await _socket.SendAsync(sendData, SocketFlags.None);
             _socket.Shutdown(SocketShutdown.Both);
-        }
-
-        private void CompletedSend(object sender, SocketAsyncEventArgs e)
-        {
-            throw new NotImplementedException();
-        }
-	
-        public void Dispose()
-        {
-	    if(_isDisposed)
-                return;
-
-            _sendSocketArgs.AcceptSocket = null;
-            _receiveSocketArgs.AcceptSocket = null;
-            _receiveDataQueue.Clear();
-            _socket.Shutdown(SocketShutdown.Both);
-            _socket.Close();
-            _socket.Dispose();
-            _socket = null;
-            TcpConnectionPool.Instance.ReturnConnection(this);
         }
 
         private struct ReceiveData

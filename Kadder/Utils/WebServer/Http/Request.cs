@@ -2,12 +2,10 @@ using System;
 using System.IO;
 using System.Text;
 
-namespace Kadder.WebServer.Http
+namespace Kadder.Utils.WebServer.Http
 {
     public class Request
     {
-
-
         public string Version { get; set; }
 
         public string Method { get; set; }
@@ -19,6 +17,12 @@ namespace Kadder.WebServer.Http
         public Header Header { get; set; }
 
         public Stream Body { get; set; }
+
+        internal bool IsURIParsed => !string.IsNullOrWhiteSpace(Version);
+
+	internal bool IsHeaderParsed{ get;set; }
+
+	internal bool IsBodyParsed{ get;set; }
 
         public void ParseURI(ArraySegment<byte> protocol)
         {
@@ -71,10 +75,10 @@ namespace Kadder.WebServer.Http
 
         public ArraySegment<byte> ParseBody(ArraySegment<byte> data)
         {
+	    Body = new MemoryStream();
+	    
             if (Header.ContentLength == 0)
                 return data;
-            if (Body == null)
-                Body = new MemoryStream();
 
             var needLength = Header.ContentLength - Body.Length;
             if (data.Count > needLength)
@@ -87,15 +91,6 @@ namespace Kadder.WebServer.Http
                 Body.Write(data);
                 return data.Slice(data.Count - 1);
             }
-        }
-
-        public bool IsParseBodyDone()
-        {
-            if (Header.ContentLength == 0)
-                return true;
-            if (Header.ContentLength == Body.Length)
-                return true;
-            return false;
         }
 
         public bool IsValid()

@@ -1,8 +1,9 @@
 using System.Text;
 using System.Collections.Concurrent;
 using System.Threading.Tasks;
+using Kadder.WebServer.Http;
 
-namespace Kadder.WebServer.Http.Pipe
+namespace Kadder.Utils.WebServer.Http.Pipe
 {
     public class InitPipe
     {
