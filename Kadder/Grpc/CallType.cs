@@ -1,3 +1,4 @@
+
 namespace Kadder.Grpc
 {
     public enum CallType

@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
-using Kadder.Utils.WebServer.Http;
 
 namespace Kadder.Utils.WebServer.Socketing
 {
@@ -92,23 +91,6 @@ namespace Kadder.Utils.WebServer.Socketing
 
         private void parsing()
         {
-            Request request = null;
-            while (true)
-            {
-                if (!_receiveDataQueue.TryDequeue(out ReceiveData receiveData)||_isDisposed)
-                    return;
-
-                while (true)
-                {
-                    if (receiveData.Data.Offset >= receiveData.Length)
-                        break;
-
-                    if (request == null)
-                    {
-                    }	// stopWatch.Restart();
-                }
-                break;
-            }
         }
 
         private async Task handleRequest(byte[] buffer)
