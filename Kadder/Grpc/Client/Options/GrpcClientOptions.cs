@@ -35,9 +35,9 @@ namespace Kadder.Grpc.Client.Options
         /// </summary>
         public bool KeepLive { get; set; }
 
-        internal List<Assembly> Assemblies { get; set; }
+        public List<Assembly> Assemblies { get; set; }
 
-        internal List<Type> Interceptors { get; set; }
+        public List<Type> Interceptors { get; set; }
 
         public List<string> AssemblyNames { get; set; }
 

@@ -15,7 +15,7 @@ namespace Kadder.Grpc.Client
         {
             if (!(requestStream is AsyncRequestStream<T> grpcRequestStream))
                 throw new InvalidCastException("The stream is not grpc stream!");
-
+            
             return grpcRequestStream.StreamWriter.WriteAsync(message);
         }
 
@@ -31,7 +31,7 @@ namespace Kadder.Grpc.Client
         {
             if (!(responseStream is AsyncResponseStream<T> grpcResponseStream))
                 throw new InvalidCastException("The stream is not grpc stream!");
-
+            
             return grpcResponseStream.StreamReader.Current;
         }
 

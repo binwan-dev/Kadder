@@ -28,13 +28,13 @@ namespace Kadder.Grpc.Client
             GlobalInterceptors = new List<Type>();
         }
 
+        public string CodeCacheDir { get; set; } = string.Empty;
+
+        public string DllCacheDir { get; set; } = string.Empty;
+
         public List<Type> GlobalInterceptors { get; internal set; }
 
         public List<GrpcProxyerOptions> ProxyerOptions { get; set; }
-
-        public IConfiguration Configuration { get; internal set; }
-
-        public IServiceCollection Services { get; internal set; }
 
         /// <summary>
         /// Add new grpc client for servicers.
@@ -48,7 +48,7 @@ namespace Kadder.Grpc.Client
             return this;
         }
 
-        internal Client Build()
+        public Client Build()
         {
             var proxyers = new List<GrpcProxyer>();
 
