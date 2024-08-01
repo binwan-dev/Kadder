@@ -15,6 +15,10 @@ namespace Kadder.Grpc.Server
         }
 
         public GrpcServerOptions Options { get; set; }
+        
+        public string CodeCacheDir { get; set; } = string.Empty;
+
+        public string DllCacheDir { get; set; } = string.Empty;
 
         internal IList<Type> GrpcServicerProxyers { get; set; }
 

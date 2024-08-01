@@ -26,6 +26,12 @@ public static class KadderGrpcServerHostExtension
             var builder = context.Configuration.GetSection(configurationKeyName).Get<GrpcServerBuilder>() ??
                           new GrpcServerBuilder();
             builderAction?.Invoke(context, services, builder);
+            
+            var codeBuilder = new CodeBuilder("Kadder.Grpc.Server");
+            if (!string.IsNullOrWhiteSpace(builder.CodeCacheDir))
+                CodeBuilder.CodeCachePath = builder.CodeCacheDir;
+            if (!string.IsNullOrWhiteSpace(builder.DllCacheDir))
+                CodeBuilder.DllCachePath = builder.DllCacheDir;
 
             var server = new Server(builder.Options.ChannelOptions);
             foreach (var port in builder.Options.Ports)
@@ -45,8 +51,7 @@ public static class KadderGrpcServerHostExtension
                 throw new ArgumentNullException("Not found any grpc servicer!");
 
             var servicerProxyers = new ServicerProxyGenerator(builder.Options.PackageName, servicerTypes).Generate();
-
-            var codeBuilder = new CodeBuilder("Kadder.Grpc.Server");
+            
             codeBuilder.CreateClass(servicerProxyers.ToArray());
             codeBuilder.AddAssemblyRefence(Assembly.GetExecutingAssembly())
                 .AddAssemblyRefence(typeof(ILogger).Assembly)
